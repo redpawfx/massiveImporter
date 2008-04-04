@@ -1,0 +1,29 @@
+0.3
+===
+o Option to cache smooth skinned agents using Maya's geometry cache. This can
+  significantly reduce the amount of memory required to load a Massive sim...
+  but also significantly increases the time required to load it.
+
+0.2
+===
+o ns_vars.so plug-in is no longer needed. Callsheets are used instead.
+  o Allows the importer to work even when Ready-to-Run agents are present.
+o Can import all agents in a scene, or only those in the specified 'selections'.
+o Chunk Skinning - geometry is chopped into pieces and each chunk is
+  parented to a joint. Definitely not final quality, but takes a lot less
+  memory than smooth skinning and can give a better idea of the final result
+  than segments.
+
+o Previously an agent's scale_var would also scale its animation data,
+  yielding an incorrect sim. This has been fixed.
+o Support option nodes that don't have a name, geometry nodes that don't
+  have any geometry, and weights files that don't exist
+
+0.1.1
+=====
+o Fix some path bugs to allow plug-in to work on windows
+
+0.1
+===
+o Initial release
+
