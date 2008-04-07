@@ -1,0 +1,43 @@
+global proc nsImportMsvCombiner( string $dir,
+								 string $basename,
+								 string $type,
+								 int $groupSize,
+								 int $numAgents )
+{
+	int $undo = `undoInfo -q -state`;
+	undoInfo -state false;
+	
+	string $suffix = ".ma";
+	if ( "mayaBinary" == $type )
+	{
+		$suffix = ".mb";
+	}
+	
+	// editDisplayLayerGlobal -mergeType doesn't seem to work right.
+	// The preferences use the displayLayerMerge optionVar to toggle
+	// display layer merging - however you have to do *something*
+	// (not sure what) after changing the optionvar for it to be
+	// loaded. A new file does the trick.
+	//
+	int $displayLayerMerge = `optionVar -q displayLayerMerge`;
+	optionVar -iv displayLayerMerge 2;
+	file -f -new;
+	
+	for ( $i = 1; $i <= $numAgents; $i += $groupSize )
+	{
+		string $base = ($basename + "_" + $i);
+		string $file = ($dir + "/" + $base + $suffix);
+		print ("### Importing: " + $file + "\n");
+		file -import -type $type -rpr ("zzz" + $i) -options "v=0" $file;
+		removeDuplicateShadingNetworks(false);
+	}
+	
+	optionVar -iv displayLayerMerge $displayLayerMerge;
+	
+	string $outputFile = ($dir + "/" + $basename + $suffix);
+	print ("### Saving:    " + $outputFile + "\n");
+	file -rename $outputFile;
+	file -f -type $type -save;
+	
+	undoInfo -state $undo;	
+}
