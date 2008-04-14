@@ -32,9 +32,11 @@ from maya.OpenMaya import MGlobal
 import ns.py as npy
 import ns.py.Errors
 
-_uiProgress = (MGlobal.mayaState() == MGlobal.kInteractive)
+_uiProgress = False
 
 def reset( maxRange ):
+	global _uiProgress
+	_uiProgress = (MGlobal.mayaState() == MGlobal.kInteractive)
 	if _uiProgress:
 		MProgressWindow.reserve()
 		MProgressWindow.setProgressRange( 0, maxRange )
