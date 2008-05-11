@@ -56,6 +56,7 @@ def setMultiAttr( multiAttr, values, childAttr="" ):
 		attr = "%s[%d:%d]%s" % (multiAttr, chunk, (chunk+curChunkSize-1), childAttr)
 		eval('mc.setAttr( "%s", %s )' % (attr, valString))
 		
+		
 def setMatrixAttr( matrixAttr, matrix ):
 	'''Set a matrix attribute. This is always tricky because usually the matrix
 	   data is stored in some sort of array structure, but Maya requires it to
@@ -799,7 +800,7 @@ class MayaAgent:
 	 				channels = [ offset + jointData.channels[channel][i-jointData.startFrame] for i in times ]
 	 				
 	 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
-	 				Timer.stop("Setting Keyframe")	 				
+	 				Timer.stop("Setting Keyframe")
 
 	def cache( self, dir ):
 		sim  = self._msvAgent.sim
