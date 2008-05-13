@@ -38,7 +38,7 @@ from ns.maya.msv.SceneDescription import MsvOpt
 import ns.maya.msv.MayaScene as MayaScene
 import ns.maya.Progress as Progress
 
-kName = "nsImportMsv"
+kName = "msvImporter"
 
 kSimDirFlag = "-sd"
 kSimDirFlagLong = "-simDir"

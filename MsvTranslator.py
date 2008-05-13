@@ -8,7 +8,7 @@ import maya.mel
 
 import ns.py.Timer as Timer
 
-import ns.maya.msv.MsvImportCmd as MsvImportCmd
+import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
 import ns.maya.msv.MasReader as MasReader
 
 kOutputDirFlag = "-out"
@@ -51,8 +51,8 @@ def parseArgs():
 		# also need it to query the number of agents and correctly
 		# divide up the load
 		#		
-		if (arg == MsvImportCmd.kMasFileFlagLong or
-		    arg == MsvImportCmd.kMasFileFlag):
+		if (arg == MsvImporterCmd.kMasFileFlagLong or
+		    arg == MsvImporterCmd.kMasFileFlag):
 			args['masFile'] = sys.argv[i+1]
 			
 		i += 1
@@ -109,7 +109,7 @@ def main():
 		# API bindings (although this is pure speculation).
 		#
 		mel = 'loadPlugin \\"MsvTools.py\\";'
-		mel += ' nsImportMsv%s%s;' % (rangeStr, flags)
+		mel += ' msvImporter%s%s;' % (rangeStr, flags)
 		mel += ' file -rename \\"%s\\"; file -f -uc 0 -type \\"%s\\" -save;' % (currentFile, args['outputType'])
 	
 		batchCmd = 'maya -batch -command "%s"' % mel
@@ -117,7 +117,7 @@ def main():
 		os.system(batchCmd)
 		
 	if groupSize < mas.numAgents:
-		combiner = 'nsImportMsvCombiner( \\"%s\\", \\"%s\\", \\"%s\\", %d, %d )' % (args['outputDir'], basename, args['outputType'], groupSize, mas.numAgents)
+		combiner = 'msvCombiner( \\"%s\\", \\"%s\\", \\"%s\\", %d, %d )' % (args['outputDir'], basename, args['outputType'], groupSize, mas.numAgents)
 		batchCmd = 'maya -batch -command "%s"' % combiner
 		print >> sys.stderr, batchCmd
 		os.system(batchCmd)

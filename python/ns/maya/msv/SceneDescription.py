@@ -162,9 +162,9 @@ class SceneDescription:
 			self.cacheDir = ""
 			
 		try:
-			range = options[MsvOpt.kRange]
+			self.range = options[MsvOpt.kRange]
 		except:
-			range = ""
+			self.range = ""
 	
 		self.skinType = eSkinType.smooth
 		if "smooth" == skinTypeString:
@@ -182,11 +182,14 @@ class SceneDescription:
 		self.sims = {}
 		
 		self._selectionGroup = MasReader.SelectionGroup()
-		if range:
-			tokens = range.split()
+		if self.range:
+			tokens = self.range.split()
 			sel = MasReader.Selection()
 			sel.addRanges( tokens )
 			self._selectionGroup.addSelection( "NimbleMsv", sel )
+
+	def baseName(self):
+		return os.path.splitext(self._masFile)[0]
 
 	def resolvePath(self, path):
 		resolved = path

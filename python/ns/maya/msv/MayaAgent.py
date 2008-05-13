@@ -538,6 +538,9 @@ class MayaAgent:
 	
 	def agentDesc( self ):
 		return self._msvAgent.agentDesc
+	
+	def sim( self ):
+		return self._msvAgent.sim
 
 	def agentType( self ):
 		return self.agentDesc().agentType
@@ -801,15 +804,6 @@ class MayaAgent:
 	 				
 	 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
 	 				Timer.stop("Setting Keyframe")
-
-	def cache( self, dir ):
-		sim  = self._msvAgent.sim
-		if not sim:
-			return
-		geos = [ geo.shapeName() for geo in self.geometryData ]
-		mc.select( geos, replace=True )
-		cmd = 'doCreateGeometryCache 4 { "0", "%d", "%d", "OneFile", "1", "%s","0","%s","0", "add", "0", "1", "1","0","1" }' % (sim.startFrame, sim.endFrame, dir, self.name())
-		mel.eval(cmd)
 
 	def deleteSkeleton( self ):
 		intermediateShapes = []

@@ -1,0 +1,730 @@
+// The MIT License
+//	
+// Copyright (c) 2008 James Piechota
+//	
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+proc loadOptionVars()
+{
+	string $simType = `optionVar -q msvImporterSimTypeOption`;
+	optionMenuGrp -e -value $simType msvImporterSimTypeMenu;
+
+	string $simDir = `optionVar -q msvImporterSimDirOption`;
+	textFieldButtonGrp -e -fileName $simDir msvImporterSimField;
+
+	string $masFile = `optionVar -q msvImporterMasFileOption`;
+	textFieldButtonGrp -e -fileName $masFile msvImporterMasField;
+
+	string $callsheet = `optionVar -q msvImporterCallsheetOption`;
+	textFieldButtonGrp -e -fileName $callsheet msvImporterCallsheetField;
+	
+	int $loadGeometry = `optionVar -q msvImporterLoadGeometryOption`;
+	checkBoxGrp -e -value1 $loadGeometry msvImporterLoadOptions;
+
+	string $skinType = `optionVar -q msvImporterSkinTypeOption`;
+	optionMenuGrp -e -value $skinType msvImporterSkinTypeMenu;
+
+	int $loadMaterials = `optionVar -q msvImporterLoadMaterialsOption`;
+	checkBoxGrp -e -value2 $loadMaterials msvImporterLoadOptions;
+
+	int $loadSegments = `optionVar -q msvImporterLoadSegmentsOption`;
+	checkBoxGrp -e -value3 $loadSegments msvImporterLoadOptions;
+
+	string $materialType = `optionVar -q msvImporterMaterialTypeOption`;
+	optionMenuGrp -e -value $materialType msvImporterMaterialTypeMenu;
+	
+	int $frameStep = `optionVar -q msvImporterFrameStepOption`;
+	intSliderGrp -e -value $frameStep msvImporterFrameStepSlider;
+
+	int $instanceSegments = `optionVar -q msvImporterInstanceSegmentsOption`;
+	checkBoxGrp -e -value1 $instanceSegments msvImporterInstanceSegmentsCheck;
+
+	int $cacheGeometry = `optionVar -q msvImporterCacheGeometryOption`;
+	checkBoxGrp -e -value1 $cacheGeometry msvImporterCacheGeometryCheck;
+
+	int $deleteSkeleton = `optionVar -q msvImporterDeleteSkeletonOption`;
+	checkBoxGrp -e -value1 $deleteSkeleton msvImporterDeleteSkeletonCheck;
+	
+	string $cacheDir = `optionVar -q msvImporterCacheDirOption`;
+	textFieldButtonGrp -e -fileName $cacheDir msvImporterCacheField;
+
+	int $useSelections = `optionVar -q msvImporterUseSelectionsOption`;
+	if ( $useSelections )
+	{
+		radioButtonGrp -e -select 2 msvImporterSelectionRadio;
+	}
+	else
+	{
+		radioButtonGrp -e -select 1 msvImporterSelectionRadio;
+	}
+}
+
+proc resetOptionVars(int $forceFactorySettings)
+{
+	//  Use timeline
+	//
+	if ($forceFactorySettings || !`optionVar -exists msvImporterSimTypeOption`) {
+		optionVar -stringValue msvImporterSimTypeOption "apf";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterSimDirOption`) {
+		optionVar -stringValue msvImporterSimDirOption "";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterMasFileOption`) {
+		optionVar -stringValue msvImporterMasFileOption "";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterCallsheetOption`) {
+		optionVar -stringValue msvImporterCallsheetOption "";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterLoadGeometryOption`) {
+		optionVar -intValue msvImporterLoadGeometryOption true;
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterSkinTypeOption`) {
+		optionVar -stringValue msvImporterSkinTypeOption "smooth";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterLoadSegmentsOption`) {
+		optionVar -intValue msvImporterLoadSegmentsOption true;
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterLoadMaterialsOption`) {
+		optionVar -intValue msvImporterLoadMaterialsOption true;
+	} 
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterMaterialTypeOption`) {
+		optionVar -stringValue msvImporterMaterialTypeOption "Maya blinn";
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterFrameStepOption`) {
+		optionVar -intValue msvImporterFrameStepOption 1;
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterInstanceSegmentsOption`) {
+		optionVar -intValue msvImporterInstanceSegmentsOption true;
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterCacheGeometryOption`) {
+		optionVar -intValue msvImporterCacheGeometryOption false;
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterDeleteSkeletonOption`) {
+		optionVar -intValue msvImporterDeleteSkeletonOption false;
+	}
+
+	if ($forceFactorySettings || !`optionVar -exists msvImporterCacheDirOption`) {
+		optionVar -stringValue msvImporterCacheDirOption "";
+	}
+	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterUseSelectionsOption`) {
+		optionVar -intValue msvImporterUseSelectionsOption false;
+	}
+}
+
+global proc msvImporterCallback( string $parent )
+{
+	setParent $parent;
+
+	string $simType = `optionMenuGrp -q -value msvImporterSimTypeMenu`;
+	optionVar -stringValue msvImporterSimTypeOption $simType;
+
+	string $simDir = `textFieldButtonGrp -q -fileName msvImporterSimField`;
+	optionVar -stringValue msvImporterSimDirOption $simDir;
+
+	string $masFile = `textFieldButtonGrp -q -fileName msvImporterMasField`;
+	optionVar -stringValue msvImporterMasFileOption $masFile;
+	
+	string $callsheet = `textFieldButtonGrp -q -fileName msvImporterCallsheetField`;
+	optionVar -stringValue msvImporterCallsheetOption $callsheet;
+
+	int $loadGeometry = `checkBoxGrp -q -value1 msvImporterLoadOptions`;
+	optionVar -intValue msvImporterLoadGeometryOption $loadGeometry;
+
+	string $skinType = `optionMenuGrp -q -value msvImporterSkinTypeMenu`;
+	optionVar -stringValue msvImporterSkinTypeOption $skinType;
+
+	int $loadMaterials = `checkBoxGrp -q -value2 msvImporterLoadOptions`;
+	optionVar -intValue msvImporterLoadMaterialsOption $loadMaterials;
+
+	int $loadSegments = `checkBoxGrp -q -value3 msvImporterLoadOptions`;
+	optionVar -intValue msvImporterLoadSegmentsOption $loadSegments;
+
+	string $materialType = `optionMenuGrp -q -value msvImporterMaterialTypeMenu`;
+	optionVar -stringValue msvImporterMaterialTypeOption $materialType;
+
+	int $frameStep = `intSliderGrp -q -value msvImporterFrameStepSlider`;
+	optionVar -intValue msvImporterFrameStepOption $frameStep;
+
+	int $instanceSegments = `checkBoxGrp -q -value1 msvImporterInstanceSegmentsCheck`;
+	optionVar -intValue msvImporterInstanceSegmentsOption $instanceSegments;
+
+	int $cacheGeometry = `checkBoxGrp -q -value1 msvImporterCacheGeometryCheck`;
+	optionVar -intValue msvImporterCacheGeometryOption $cacheGeometry;
+
+	int $deleteSkeleton = `checkBoxGrp -q -value1 msvImporterDeleteSkeletonCheck`;
+	optionVar -intValue msvImporterDeleteSkeletonOption $deleteSkeleton;
+	
+	string $cacheDir = `textFieldButtonGrp -q -fileName msvImporterCacheField`;
+	optionVar -stringValue msvImporterCacheDirOption $cacheDir;
+
+	int $useSelection = (2 == `radioButtonGrp -q -select msvImporterSelectionRadio`);
+	optionVar -intValue msvImporterUseSelectionsOption $useSelection;
+
+	nsPerformMsvImporter( 0 );
+}
+
+global proc msvImporterUpdateSelections()
+{
+	int $useSelection = (2 == `radioButtonGrp -q -select msvImporterSelectionRadio`);
+
+	textScrollList -e -enable $useSelection msvImporterSelectionList;
+
+	if ( $useSelection )
+	{
+		textScrollList -e -removeAll msvImporterSelectionList;
+		string $masFile = `textFieldButtonGrp -q -fileName msvImporterMasField`;
+		string $selections[];
+		if ( !catch($selections = `eval("msvImporter -q -selection -masFile \"" + $masFile + "\"")`) )
+		{
+			for ( $selection in $selections )
+			{
+				textScrollList -e -append $selection msvImporterSelectionList;
+			}
+		}
+	}
+}
+
+global proc msvImporterHideWidgets()
+{
+	int $loadGeometry = `checkBoxGrp -q -value1 msvImporterLoadOptions`;
+	int $loadMaterials = `checkBoxGrp -q -value2 msvImporterLoadOptions`;
+	int $loadSegments = `checkBoxGrp -q -value3 msvImporterLoadOptions`;
+	int $cacheGeometry = `checkBoxGrp -q -value1 msvImporterCacheGeometryCheck`;
+	
+	optionMenuGrp -e -enable $loadGeometry msvImporterSkinTypeMenu;
+	optionMenuGrp -e -enable $loadMaterials msvImporterMaterialTypeMenu;
+	checkBoxGrp -e -enable $loadSegments msvImporterInstanceSegmentsCheck;
+	checkBoxGrp -e -enable $cacheGeometry msvImporterDeleteSkeletonCheck;
+	textFieldButtonGrp -e -enable $cacheGeometry msvImporterCacheField;
+}
+
+global proc int msvImporterBrowseMas( string $file, string $type )
+{
+	if ( "mas" != `fileExtension $file` )
+	{
+		warning($file + " is not a Massive setup file (.mas).");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $file msvImporterMasField;
+	msvImporterUpdateSelections();
+	return true;
+}
+
+global proc int msvImporterBrowseSim( string $dir, string $type )
+{
+	if ( !`filetest -d $dir` )
+	{
+		warning($dir + " is not a directory.");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $dir msvImporterSimField;
+	return true;
+}
+
+global proc int msvImporterBrowseCallsheet( string $file, string $type )
+{
+	textFieldButtonGrp -e -fileName $file msvImporterCallsheetField;
+	return true;
+}
+
+global proc int msvImporterBrowseCache( string $dir, string $type )
+{
+	if ( !`filetest -d $dir` )
+	{
+		warning($dir + " is not a directory.");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $dir msvImporterCacheField;
+	return true;
+}
+
+proc msvImporterOptions()
+{
+	resetOptionVars( false );
+
+	//	Get the option box.
+	//
+	//  The value returned is the name of the layout to be used as
+	//	the parent for the option box UI.
+	//
+	string $layout = getOptionBox();
+	setParent $layout;
+	
+	//	Activate the default UI template so that the layout of this 
+	//	option box is consistent with the layout of the rest of the 
+	//	application.
+	//
+	setUITemplate -pushTemplate DefaultTemplate;
+
+	//	Turn on the wait cursor.
+	//
+	waitCursor -state 1;
+
+	//	RECOMMENDATION:  Place the UI in a scroll layout.  If the 
+	//	option box window is ever resized such that it's entire 
+	//	contents is not visible then the scroll bars provided by the
+	//	scroll layout will allow the user to access the hidden UI.
+	//
+	tabLayout -tv false -scr true;
+	
+	string $parent = `columnLayout -adjustableColumn true`;
+
+	string $mainForm = `formLayout -numberOfDivisions 100`;
+
+ 	optionMenuGrp
+		-label "Sim Type"
+		-adjustableColumn 2
+		msvImporterSimTypeMenu;
+ 	menuItem -label "apf";
+ 	menuItem -label "amc";
+ 	
+	textFieldButtonGrp
+		-label "Setup File (.mas)"
+		-text ""
+		-buttonLabel "Browse"
+		-buttonCommand "fileBrowser \"msvImporterBrowseMas\" \"Ok\" \"\" 0"
+		-changeCommand "msvImporterUpdateSelections"
+		msvImporterMasField;
+		
+	textFieldButtonGrp
+		-label "Sim Directory"
+		-text ""
+		-buttonLabel "Browse"
+		-buttonCommand "fileBrowser \"msvImporterBrowseSim\" \"Ok\" \"\" 4"
+		msvImporterSimField;
+
+	textFieldButtonGrp
+		-label "Callsheet"
+		-text ""
+		-buttonLabel "Browse"
+		-buttonCommand "fileBrowser \"msvImporterBrowseCallsheet\" \"Ok\" \"\" 0"
+		msvImporterCallsheetField;
+ 
+	frameLayout
+		-label "Options"
+		-borderStyle "etchedIn"
+		-collapse false
+		-collapsable true
+		msvImporterOptionsFrame;
+
+		string $optionsForm = `formLayout -numberOfDivisions 100`;
+
+			checkBoxGrp
+	        	-numberOfCheckBoxes 3
+	        	-vertical
+	        	-label "Load:"
+	        	-labelArray3 "Geometry" "Materials" "Segment Shapes"
+	        	-changeCommand "msvImporterHideWidgets"
+	        	msvImporterLoadOptions;
+
+		 	optionMenuGrp
+				-label "Skin type:"
+				-adjustableColumn 2
+				msvImporterSkinTypeMenu;
+		 	menuItem -label "smooth";
+		 	menuItem -label "chunk";
+
+		 	optionMenuGrp
+				-label "Load materials as:"
+				-adjustableColumn 2
+				msvImporterMaterialTypeMenu;
+		 	menuItem -label "Maya blinn";
+		 	menuItem -label "Maya lambert";
+		 	
+			checkBoxGrp
+	        	-numberOfCheckBoxes 1
+	        	-vertical
+	        	-label "Instance Segments:"
+	        	msvImporterInstanceSegmentsCheck;
+
+
+			intSliderGrp
+				-label "Frame step:"
+				-field true
+				-minValue 1
+				-fieldMaxValue 1000
+				-adjustableColumn 3
+				msvImporterFrameStepSlider;
+
+		formLayout -edit
+	 		-attachForm		msvImporterLoadOptions		"top"		5
+	 		-attachForm		msvImporterLoadOptions		"left"		5
+	 		-attachForm		msvImporterLoadOptions		"right"		5
+
+			-attachControl	msvImporterSkinTypeMenu		"top"		5 msvImporterLoadOptions
+	 		-attachForm		msvImporterSkinTypeMenu		"left"		5
+	 		-attachForm		msvImporterSkinTypeMenu		"right"		5
+			-attachNone		msvImporterSkinTypeMenu		"bottom"
+
+			-attachControl	msvImporterMaterialTypeMenu	"top"		5 msvImporterSkinTypeMenu
+	 		-attachForm		msvImporterMaterialTypeMenu	"left"		5
+	 		-attachForm		msvImporterMaterialTypeMenu	"right"		5
+			-attachNone		msvImporterMaterialTypeMenu	"bottom"
+
+			-attachControl	msvImporterInstanceSegmentsCheck	"top"		5 msvImporterMaterialTypeMenu
+	 		-attachForm		msvImporterInstanceSegmentsCheck	"left"		5
+	 		-attachForm		msvImporterInstanceSegmentsCheck	"right"		5
+			-attachNone		msvImporterInstanceSegmentsCheck	"bottom"
+
+			-attachControl	msvImporterFrameStepSlider	"top"		5 msvImporterInstanceSegmentsCheck
+	 		-attachForm		msvImporterFrameStepSlider	"left"		5
+	 		-attachForm		msvImporterFrameStepSlider	"right"		5
+			-attachNone		msvImporterFrameStepSlider	"bottom"
+		$optionsForm;
+
+		setParent ..;
+	setParent ..;
+		
+	frameLayout
+		-label "Caching"
+		-borderStyle "etchedIn"
+		-collapse true
+		-collapsable true
+		msvImporterCachingFrame;
+
+		string $optionsForm = `formLayout -numberOfDivisions 100`;
+
+			checkBoxGrp
+	        	-numberOfCheckBoxes 1
+	        	-label "Cache geometry:"
+	        	-changeCommand "msvImporterHideWidgets"
+	        	msvImporterCacheGeometryCheck;
+
+			checkBoxGrp
+	        	-numberOfCheckBoxes 1
+	        	-label "Delete skeleton:"
+	        	-changeCommand "msvImporterHideWidgets"
+	        	msvImporterDeleteSkeletonCheck;
+
+			textFieldButtonGrp
+				-label "Cache Directory"
+				-text ""
+				-buttonLabel "Browse"
+				-buttonCommand "fileBrowser \"msvImporterBrowseCache\" \"Ok\" \"\" 4"
+				msvImporterCacheField;
+
+
+		formLayout -edit
+	 		-attachForm		msvImporterCacheGeometryCheck		"top"		5
+	 		-attachForm		msvImporterCacheGeometryCheck		"left"		5
+	 		-attachForm		msvImporterCacheGeometryCheck		"right"		5
+
+			-attachControl	msvImporterDeleteSkeletonCheck		"top"		5 msvImporterCacheGeometryCheck
+	 		-attachForm		msvImporterDeleteSkeletonCheck		"left"		5
+	 		-attachForm		msvImporterDeleteSkeletonCheck		"right"		5
+			-attachNone		msvImporterDeleteSkeletonCheck		"bottom"
+
+			-attachControl	msvImporterCacheField	"top"		5 msvImporterDeleteSkeletonCheck
+	 		-attachForm		msvImporterCacheField	"left"		5
+	 		-attachForm		msvImporterCacheField	"right"		5
+			-attachNone		msvImporterCacheField	"bottom"
+		$optionsForm;
+
+		setParent ..;
+	setParent ..;
+	
+	frameLayout
+		-label "Selections"
+		-borderStyle "etchedIn"
+		-collapse true
+		-collapsable true
+		msvImporterSelectionsFrame;
+
+		string $selectionsForm = `formLayout -numberOfDivisions 100`;
+
+		radioButtonGrp
+			-vertical
+			-select 1
+			-columnWidth 1 20
+			-columnWidth 2 200
+			-numberOfRadioButtons 2
+    		-labelArray2 "Load all agents" "Load only these selections:"
+    		-changeCommand "msvImporterUpdateSelections"
+    		msvImporterSelectionRadio;
+    		
+    	textScrollList
+    		-numberOfRows 10
+    		-allowMultiSelection true
+    		msvImporterSelectionList;
+
+		formLayout -edit
+	 		-attachForm		msvImporterSelectionRadio		"top"		5
+	 		-attachForm		msvImporterSelectionRadio		"left"		5
+	 		//-attachForm		msvImporterSelectionRadio		"right"		5
+	 		
+			-attachForm		msvImporterSelectionList			"top"		5
+	 		-attachControl	msvImporterSelectionList			"left"		5 msvImporterSelectionRadio
+	 		-attachForm		msvImporterSelectionList			"right"		5
+			-attachForm		msvImporterSelectionList			"bottom"	5
+
+		$selectionsForm;
+
+		setParent ..;
+	setParent ..;
+ 
+ 	//
+	
+	formLayout -edit
+ 		-attachForm		msvImporterMasField			"top"		5
+ 		-attachForm		msvImporterMasField			"left"		5
+ 		-attachForm		msvImporterMasField			"right"		5
+
+		-attachControl	msvImporterSimField			"top"		5 msvImporterMasField
+ 		-attachForm		msvImporterSimField			"left"		5
+ 		-attachForm		msvImporterSimField			"right"		5
+		-attachNone		msvImporterSimField			"bottom"
+
+		-attachControl	msvImporterCallsheetField	"top"		5 msvImporterSimField
+ 		-attachForm		msvImporterCallsheetField	"left"		5
+ 		-attachForm		msvImporterCallsheetField	"right"		5
+		-attachNone		msvImporterCallsheetField	"bottom"
+
+		-attachControl	msvImporterSimTypeMenu		"top"		5 msvImporterCallsheetField
+ 		-attachForm		msvImporterSimTypeMenu		"left"		5
+ 		-attachForm		msvImporterSimTypeMenu		"right"		5
+		-attachNone		msvImporterSimTypeMenu		"bottom"
+
+		-attachControl	msvImporterOptionsFrame		"top"		5 msvImporterSimTypeMenu
+ 		-attachForm		msvImporterOptionsFrame		"left"		5
+ 		-attachForm		msvImporterOptionsFrame		"right"		5
+		-attachNone		msvImporterOptionsFrame		"bottom"
+
+		-attachControl	msvImporterCachingFrame		"top"		5 msvImporterOptionsFrame
+ 		-attachForm		msvImporterCachingFrame		"left"		5
+ 		-attachForm		msvImporterCachingFrame		"right"		5
+		-attachNone		msvImporterCachingFrame		"bottom"
+
+		-attachControl	msvImporterSelectionsFrame	"top"		5 msvImporterCachingFrame
+ 		-attachForm		msvImporterSelectionsFrame	"left"		5
+ 		-attachForm		msvImporterSelectionsFrame	"right"		5
+		-attachNone		msvImporterSelectionsFrame	"bottom"
+
+ 	$mainForm;
+
+	loadOptionVars();
+	msvImporterHideWidgets();
+	msvImporterUpdateSelections();
+
+	//	Turn off the wait cursor.
+	//
+	waitCursor -state 0;
+	
+	//	Deactivate the default UI template.
+	//
+	setUITemplate -popTemplate;
+
+	//	Attach actions to those buttons that are applicable to the option
+	//	box.  Note that the 'Close' button has a default action attached 
+	//	to it that will hide the window.  If a a custom action is
+	//	attached to the 'Close' button then be sure to call the 'hide the
+	//	option box' procedure within the custom action so that the option
+	//	box is hidden properly.
+
+	//	'Apply' button.
+	//
+	string $applyBtn = getOptionBoxApplyBtn();
+	button -edit
+		-label "Import"
+		-command ("msvImporterCallback( \"" + $parent + "\" )")
+		$applyBtn;
+
+	//	'Save' button.
+	//
+	string $saveBtn = getOptionBoxSaveBtn();
+	button -edit 
+		-command ("hideOptionBox")
+		$saveBtn;
+
+	//	'Reset' button.
+	//
+	string $resetBtn = getOptionBoxResetBtn();
+	button -edit 
+		-command ("nsPerformMsvImporter(3)")
+		$resetBtn;
+
+	//	Set the option box title.
+	//
+	setOptionBoxTitle("Massive Import Options");
+
+	//	Show the option box.
+	//
+	showOptionBox();
+}
+
+proc string assembleCmd()
+{
+	string $cmd = "msvImporter";
+
+	string $masFile = `optionVar -q msvImporterMasFileOption`;
+	if ( "" == $masFile )
+	{
+		error("Please choose a .mas file to import.");
+	}
+	$cmd += (" -masFile \"" + $masFile + "\"");
+
+	string $simType = `optionVar -q msvImporterSimTypeOption`;
+	$simType = `tolower $simType`;
+	$cmd += (" -simType \"" + $simType + "\"");
+
+	string $simDir = `optionVar -q msvImporterSimDirOption`;
+	if ( "" != $simDir )
+	{
+		$cmd += (" -simDir \"" + $simDir + "\"");
+	}
+
+	string $callsheet = `optionVar -q msvImporterCallsheetOption`;
+	if ( "" != $callsheet )
+	{
+		$cmd += (" -callsheet \"" + $callsheet + "\"");
+	}
+
+	int $loadGeometry = `optionVar -q msvImporterLoadGeometryOption`;
+	$cmd += (" -loadGeometry " + $loadGeometry);
+
+	int $loadSegments = `optionVar -q msvImporterLoadSegmentsOption`;
+	$cmd += (" -loadSegments " + $loadSegments);
+
+	int $loadMaterials = `optionVar -q msvImporterLoadMaterialsOption`;
+	$cmd += (" -loadMaterials " + $loadMaterials);
+
+	string $skinType = `optionVar -q msvImporterSkinTypeOption`;
+	if ( "chunk" == $skinType )
+	{
+		// The command support "smooth", "duplicate", and "instance", where
+		// duplicate and instance are both forms of chunk skinning. However
+		// The current instance implementation is slower and takes more
+		// memory than duplicate, so it is not exposed through the UI
+		//
+		$skinType = "duplicate";
+	}
+	$cmd += (" -skinType \"" + $skinType + "\"");
+
+	string $materialType = `optionVar -q msvImporterMaterialTypeOption`;
+	$materialType = `tolower $materialType`;
+	if ( "maya blinn" == $materialType )
+	{
+		$materialType = "blinn";
+	}
+	else if ( "maya lambert" == $materialType )
+	{
+		$materialType = "lambert";
+	}
+	$cmd += (" -materialType \"" + $materialType + "\"");
+
+	int $instanceSegments = `optionVar -q msvImporterInstanceSegmentsOption`;
+	$cmd += (" -instanceSegments " + $instanceSegments);
+
+	int $frameStep = `optionVar -q msvImporterFrameStepOption`;
+	$cmd += (" -frameStep " + $frameStep);
+
+	int $cacheGeometry = `optionVar -q msvImporterCacheGeometryOption`;
+	$cmd += (" -cacheGeometry " + $cacheGeometry);
+	
+	if ($cacheGeometry)
+	{
+		int $deleteSkeleton = `optionVar -q msvImporterDeleteSkeletonOption`;
+		$cmd += (" -deleteSkeleton " + $deleteSkeleton);
+
+		string $cacheDir = `optionVar -q msvImporterCacheDirOption`;
+		if ( "" != $cacheDir )
+		{
+			$cmd += (" -cacheDir \"" + $cacheDir + "\"");
+		}		
+	}
+
+	if ( `optionVar -q msvImporterUseSelectionsOption` )
+	{
+		string $selections[] = `textScrollList -q -selectItem msvImporterSelectionList`;
+		for ( $selection in $selections )
+		{
+			$cmd += (" -selection \"" + $selection + "\"");
+		}
+	}
+
+	return $cmd;
+}
+
+global proc string nsPerformMsvImporter( int $action )
+{
+	string $cmd = "";
+
+	switch ($action) {
+
+		//  Execute the command.
+		//
+		case 0:
+			//  Retrieve the option settings
+			//
+			resetOptionVars(false);
+
+			//  Get the command.
+			//
+			$cmd = `assembleCmd`;
+
+			//  Execute the command with the option settings.
+			//
+			evalEcho($cmd);
+
+			break;
+
+		//  Show the option box.
+		//
+		case 1:
+			msvImporterOptions();
+			break;
+
+		//  Return the command string.
+		//
+		case 2:
+			//  Retrieve the option settings.
+			//
+			resetOptionVars (false);
+
+			//  Get the command.
+			//
+			$cmd = `assembleCmd`;
+			break;
+
+		// Reset
+		//
+		case 3:
+			resetOptionVars( true );
+			loadOptionVars();
+			break;
+	}
+	return $cmd;
+}
+
+global proc msvImporterWin()
+{
+	nsPerformMsvImporter(1);
+}

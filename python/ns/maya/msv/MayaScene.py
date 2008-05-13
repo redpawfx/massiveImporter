@@ -24,6 +24,7 @@ import sys
 from copy import deepcopy
 
 import maya.cmds as mc
+import maya.mel
 from maya.OpenMaya import *
 
 import ns.py as npy
@@ -157,16 +158,16 @@ class MayaScene:
 		[skin.groupName] = mc.parent(skin.groupName, self._getGeoMastersGroup(), relative=True)
  		[skin.groupName] = mc.ls(skin.groupName, long=True)
  
-		if not msvGeometry.attach and \
-		   SceneDescription.eSkinType.smooth != self.sceneDesc.skinType:
+		if ( not msvGeometry.attach and
+			 SceneDescription.eSkinType.smooth != self.sceneDesc.skinType ):
 			self._chunkGeometry( msvGeometry, skin )
 		
 		return skin
 	
 	def _copyGeoMaster( self, skin, groupName, destGeometry ):
 		copy = MayaAgent.MayaSkin()
-		if not destGeometry.skinnable() or \
-		   SceneDescription.eSkinType.smooth == self.sceneDesc.skinType:
+		if ( not destGeometry.skinnable() or
+		     SceneDescription.eSkinType.smooth == self.sceneDesc.skinType ):
 			# If the destination geometry is attached, has no skin weights,
 			# or has weights and is to be smooth skinned - no chunking
 			# is necessary so do a standard duplicate
@@ -372,19 +373,17 @@ class MayaScene:
 			shadingIncrement = int(0.1 * progressRange)
 		agentIncrement = 0
 		simIncrement = 0
-		cacheIncrment = 0
+		cacheIncrement = 0
 		deleteIncrement = 0
 		if numAgents:
 			leftover = progressRange - terrainIncrement - shadingIncrement
 			
 			if self.sceneDesc.cacheGeometry:
-				cacheTotal = int(0.35 * leftover)
-				cacheIncrement = int(cacheTotal / numAgents)
-				leftover -= cacheTotal
+				cacheIncrement = int(0.35 * leftover)
+				leftover -= cacheIncrement
 			if self.sceneDesc.deleteSkeleton:
-				deleteTotal = int(0.05 * leftover) 
-				deleteIncrement = int(deleteTotal / numAgents)
-				leftover -= deleteTotal
+				deleteIncrement = int(0.05 * leftover) 
+				leftover -= deleteIncrement
 			
 			agentIncrement = int(int(0.5 * leftover) / numAgents)
 			simIncrement = int(int(0.5 * leftover) / numAgents)
@@ -394,6 +393,10 @@ class MayaScene:
 		if self.sceneDesc.terrainFile():
 			self.importObj( self.sceneDesc.terrainFile(), "terrain" )
 			
+		mayaAgents = []
+		startFrame = -1
+		endFrame = -1
+		
 		for msvAgent in self.sceneDesc.agents():
 			mayaAgent = MayaAgent.MayaAgent( msvAgent )
 			
@@ -406,30 +409,69 @@ class MayaScene:
 			Timer.start("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
 			mayaAgent.loadSim()
+			
+			# Presumably ever agent will be simmed over the same frame
+			# range - however since the frame ranges could conceivably
+			# be different, find and and store the earliest startFrame
+			# and latest endFrame
+			#
+			if mayaAgent.sim:
+				if -1 == startFrame or mayaAgent.sim().startFrame < startFrame:
+					startFrame = mayaAgent.sim().startFrame
+				if -1 == endFrame or mayaAgent.sim().endFrame > endFrame:
+					endFrame = mayaAgent.sim().endFrame
+			
 			Progress.advanceProgress( simIncrement )
 			Timer.stop("Sim Agent")
+						
+			mayaAgent.setupDisplayLayers()
+			mayaAgents.append( mayaAgent )
+
+		if self.sceneDesc.cacheGeometry:
+			# Create geometry caches for each agent.
+			#
+			Timer.start("Caching Agents")
+			Progress.setProgressStatus( "Caching..." )
+
+			meshes = []
+			for mayaAgent in mayaAgents:
+				meshes.extend( [ geometry.shapeName() for geometry in mayaAgent.geometryData ] )
 			
-			if self.sceneDesc.cacheGeometry:
-				# Create geometry caches for each agent.
-				#
-				Timer.start("Caching Agent")
-				Progress.setProgressStatus( "%s: Caching..." % mayaAgent.name() )
-				mayaAgent.cache(self.sceneDesc.cacheDir)
-				Progress.advanceProgress( cacheIncrement )
-				Timer.stop("Caching Agent")
+			cacheFileName = "%s_%s" % (sceneDesc.baseName(), sceneDesc.range)
+			
+			mc.cacheFile( directory=self.sceneDesc.cacheDir,
+						  singleCache=True,
+						  doubleToFloat=True,
+						  format="OneFilePerFrame",
+						  simulationRate=1,
+						  sampleMultiplier=1,
+						  fileName=cacheFileName,
+						  startTime=startFrame,
+						  endTime=endFrame,
+						  points=meshes )
+			switches = [ maya.mel.eval( 'createHistorySwitch( "%s", false )' % mesh ) for mesh in meshes ]
+			switchAttrs = [ ( "%s.inp[0]" % switch ) for switch in switches ]
+			mc.cacheFile( attachFile=True,
+						  fileName=cacheFileName,
+						  directory=self.sceneDesc.cacheDir,
+						  channelName=meshes,
+						  inAttr=switchAttrs )
+			for switch in switches:
+				mc.setAttr( "%s.playFromCache" % switch, True )
+			Progress.advanceProgress( cacheIncrement )
+			Timer.stop("Caching Agents")
 	
 			if self.sceneDesc.deleteSkeleton:
 				# After creating a geometry cache the skeleton, anim curves, and
 				# skin clusters are no longer needed to playback the sim. To save
 				# memory the user can choose to delete them.
 				#
-				Timer.start("Deleting Skeleton")
+				Timer.start("Deleting Skeletons")
 				Progress.setProgressStatus( "%s: Deleting skeleton..." % mayaAgent.name() )
-				mayaAgent.deleteSkeleton()
+				for mayaAgent in mayaAgents:
+					mayaAgent.deleteSkeleton()
 				Progress.advanceProgress( deleteIncrement )
-				Timer.stop("Deleting Skeleton")
-
-			mayaAgent.setupDisplayLayers()
+				Timer.stop("Deleting Skeletons")
 
 		if self.sceneDesc.loadPrimitives:
 			if self.sceneDesc.instancePrimitives:

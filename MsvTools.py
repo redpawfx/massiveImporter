@@ -23,22 +23,22 @@
 import sys
 import maya.OpenMayaMPx as OpenMayaMPx
 
-import ns.maya.msv.MsvImportCmd as MsvImportCmd
+import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
 
 # initialize the script plug-in
 def initializePlugin(oPlugin):
     fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
     try:
-        fPlugin.registerCommand( MsvImportCmd.kName, MsvImportCmd.creator, MsvImportCmd.syntaxCreator )
+        fPlugin.registerCommand( MsvImporterCmd.kName, MsvImporterCmd.creator, MsvImporterCmd.syntaxCreator )
     except:
-        sys.stderr.write( "Failed to register command: %s" % MsvImportCmd.kName )
+        sys.stderr.write( "Failed to register command: %s" % MsvImporterCmd.kName )
         raise
 
 # uninitialize the script plug-in
 def uninitializePlugin(oPlugin):
     fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
     try:
-        fPlugin.deregisterCommand( MsvImportCmd.kName )
+        fPlugin.deregisterCommand( MsvImporterCmd.kName )
     except:
-        sys.stderr.write( "Failed to deregister command: %s" % MsvImportCmd.kName )
+        sys.stderr.write( "Failed to deregister command: %s" % MsvImporterCmd.kName )
         raise

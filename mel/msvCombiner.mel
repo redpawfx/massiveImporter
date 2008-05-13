@@ -1,4 +1,4 @@
-global proc nsImportMsvCombiner( string $dir,
+global proc msvCombiner( string $dir,
 								 string $basename,
 								 string $type,
 								 int $groupSize,
