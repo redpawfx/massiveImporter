@@ -319,11 +319,11 @@ class SceneDescription:
 		if self._masFile:
 			resolvedPath = self.resolvePath(self._masFile)
 			Progress.setProgressStatus(os.path.basename(resolvedPath))
-			Timer.start("Read MAS")
+			Timer.push("Read MAS")
 			mas = MasReader.read( resolvedPath )
 			self._terrainFile = mas.terrainFile
 			self._cdlFiles = mas.cdlFiles
-			Timer.stop("Read MAS")
+			Timer.pop()
 			Progress.advanceProgress( masProgress )
 
 			# store the user specified selections - they will be used
@@ -336,7 +336,7 @@ class SceneDescription:
 		
 		# Load the agent description of all specified CDL files
 		#
-		Timer.start("Read CDL")
+		Timer.push("Read CDL")
 		for cdlFile in self._cdlFiles:
 			resolvedPath = self.resolvePath(cdlFile.file)
 			Progress.setProgressStatus(os.path.basename(resolvedPath))
@@ -345,21 +345,21 @@ class SceneDescription:
 			#
 			self.agentDesc( resolvedPath, cdlFile.type )
 			Progress.advanceProgress( cdlProgress )
-		Timer.stop("Read CDL")
+		Timer.pop()
 		
 		# If a callsheet was given use it to fix the variable values
 		# for all agent instances. Otherwise the variable values will be
 		# random.
 		#
 		if self._callsheet:
-			Timer.start("Read Callsheet")
+			Timer.push("Read Callsheet")
 			resolvedPath = self.resolvePath(self._callsheet)
 			Progress.setProgressStatus( os.path.basename(resolvedPath) )
 			
 			CallsheetReader.read( resolvedPath, self )
 			
 			Progress.advanceProgress( callsheetProgress )
-			Timer.stop("Read Callsheet")
+			Timer.pop()
 		
 		# Load the sim data if a sim dir was given.
 		#

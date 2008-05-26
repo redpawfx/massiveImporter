@@ -57,11 +57,11 @@ def _readAPFSim( simFiles, sceneDesc, progressRange ):
 
 	progressIncrement = int(progressRange / len(apfFiles))	
 	for apfFile in apfFiles:
-		Timer.start("Read APF")
+		Timer.push("Read APF")
 		Progress.setProgressStatus(os.path.basename(apfFile.file))
 		APFReader.read( apfFile.file, sceneDesc, apfFile.frame )
 		Progress.advanceProgress( progressIncrement )
-		Timer.stop("Read APF")	
+		Timer.pop()
 
 def _readAMCSim( simFiles, sceneDesc, progressRange ):
 	progressIncrement = int(progressRange / len(simFiles))	
@@ -84,9 +84,9 @@ def _readAMCSim( simFiles, sceneDesc, progressRange ):
 			#
 			continue
 
-		Timer.start("Read AMC")
+		Timer.push("Read AMC")
 		agent.sim = AMCReader.read( simFile, agent.agentDesc )
-		Timer.stop("Read AMC")	
+		Timer.pop()
 		Progress.advanceProgress( progressIncrement )
 
 def read(dirPath, simType, sceneDesc, progressRange):

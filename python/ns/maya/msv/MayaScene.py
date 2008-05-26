@@ -46,11 +46,6 @@ def dagPathFromName( name ):
 	selList.getDagPath( 0, dagPath )
 	return dagPath
 	
-def getDescendentShapes( name ):
-	descendents = mc.listRelatives( name, allDescendents=True, fullPath=True )
-	shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
-	return shapes
-	
 class MayaScene:
 	def __init__(self):
 		self.reset()
@@ -153,10 +148,12 @@ class MayaScene:
 		'''Called the first time a given .obj file is encountered.
 		   Import the object and, if some sort of rigid skinning is
 		   desired, chunk it up'''
-		skin = MayaAgent.MayaSkin() 
-		skin.groupName = self.importObj( msvGeometry.file, groupName )
-		[skin.groupName] = mc.parent(skin.groupName, self._getGeoMastersGroup(), relative=True)
- 		[skin.groupName] = mc.ls(skin.groupName, long=True)
+		skin = MayaAgent.MayaSkin( group=self.importObj( msvGeometry.file, groupName ),
+								   name=groupName,
+								   parent=self._getGeoMastersGroup() )
+ 		
+ 		#regulator = mc.createNode( "msvMeshRegulator", name="regulator", skipSelect=True )
+ 		#mc.connectAttr( "%s.outMesh" % skin.shapeName(), "%s.inMesh" % regulator )
  
 		if ( not msvGeometry.attach and
 			 SceneDescription.eSkinType.smooth != self.sceneDesc.skinType ):
@@ -165,31 +162,25 @@ class MayaScene:
 		return skin
 	
 	def _copyGeoMaster( self, skin, groupName, destGeometry ):
-		copy = MayaAgent.MayaSkin()
+		copy = None
 		if ( not destGeometry.skinnable() or
 		     SceneDescription.eSkinType.smooth == self.sceneDesc.skinType ):
 			# If the destination geometry is attached, has no skin weights,
 			# or has weights and is to be smooth skinned - no chunking
 			# is necessary so do a standard duplicate
 			#
-			copy.groupName = mc.duplicate( skin.groupName, name=groupName,
-								  		   returnRootsOnly=True,
-						  		  		   upstreamNodes=False, inputConnections=False )
-			[copy.groupName] = mc.parent( copy.groupName, world=True )
-			copy.groupName = mc.rename( copy.groupName, groupName )
-			[copy.groupName] = mc.ls(copy.groupName, long=True)
-			shapes = getDescendentShapes( copy.groupName )
-			if shapes:
-				copy.setShapeName(shapes[0])
+			group = mc.duplicate( skin.groupName, name=groupName,
+								  returnRootsOnly=True,
+						  		  upstreamNodes=False, inputConnections=False )
+			copy = MayaAgent.MayaSkin( group=group, name=groupName, parent="|" )
 		elif SceneDescription.eSkinType.duplicate == self.sceneDesc.skinType:
 			# destination geometry is skinnable and the user has chosen
 			# to do a chunk skinning using chunk duplicates. Go through
 			# the cached geometry, which should already be chunked, and
 			# copy the chunks
 			#
-			copy.groupName = mc.group(empty=True)
-			copy.groupName = mc.rename( copy.groupName, groupName )
-			[copy.groupName] = mc.ls(copy.groupName, long=True)
+			copy = MayaAgent.MayaSkin( group=mc.group(empty=True),
+									   name=groupName )
 			
 			for ( deformer, chunk ) in skin.chunks.items():
 				chunk = skin.chunkName(chunk)
@@ -199,9 +190,8 @@ class MayaScene:
 				[newChunk] = mc.ls(newChunk, long=True)
 				copy.addChunk(deformer, newChunk)
 		else:
-			copy.groupName = mc.group(empty=True)
-			copy.groupName = mc.rename( copy.groupName, groupName )
-			[copy.groupName] = mc.ls(copy.groupName, long=True)
+			copy = MayaAgent.MayaSkin( group=mc.group(empty=True),
+									   name=groupName )
 			
 			for ( deformer, chunk ) in skin.chunks.items():
 				chunk = skin.chunkName(chunk)
@@ -220,6 +210,8 @@ class MayaScene:
 		destGeometry.skin = copy
 	
 	def importGeometry( self, mayaGeometry, groupName ):
+		'''Build Maya geometry either by importing it from disk, or copying
+		   an already imported geometry "master".'''
 		key = ""
 		if SceneDescription.eSkinType.smooth == self.sceneDesc.skinType:
 			# When smooth binding every agent just gets a copy of the
@@ -234,8 +226,10 @@ class MayaScene:
 			#
 			key = "%s_%s" % (mayaGeometry.agent.agentType(), mayaGeometry.file())
 		if key in self.geoMasters:
+			# "master" exists, copy it.
 			self._copyGeoMaster( self.geoMasters[key], groupName, mayaGeometry )
 		else:
+			# no "master", create one, and then copy it.
 			self.geoMasters[key] = self._buildGeoMaster( mayaGeometry.msvGeometry, groupName )
 			self.importGeometry( mayaGeometry, groupName )
 
@@ -400,17 +394,17 @@ class MayaScene:
 		for msvAgent in self.sceneDesc.agents():
 			mayaAgent = MayaAgent.MayaAgent( msvAgent )
 			
-			Timer.start("Build Agent")
+			Timer.push("Build Agent")
 			Progress.setProgressStatus( "%s: Building..." % mayaAgent.name() )
 			mayaAgent.build( self )
 			Progress.advanceProgress( agentIncrement )
-			Timer.stop("Build Agent")
+			Timer.pop()
 				
-			Timer.start("Sim Agent")
+			Timer.push("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
 			mayaAgent.loadSim()
 			
-			# Presumably ever agent will be simmed over the same frame
+			# Presumably every agent will be simmed over the same frame
 			# range - however since the frame ranges could conceivably
 			# be different, find and and store the earliest startFrame
 			# and latest endFrame
@@ -422,7 +416,7 @@ class MayaScene:
 					endFrame = mayaAgent.sim().endFrame
 			
 			Progress.advanceProgress( simIncrement )
-			Timer.stop("Sim Agent")
+			Timer.pop()
 						
 			mayaAgent.setupDisplayLayers()
 			mayaAgents.append( mayaAgent )
@@ -430,7 +424,7 @@ class MayaScene:
 		if self.sceneDesc.cacheGeometry:
 			# Create geometry caches for each agent.
 			#
-			Timer.start("Caching Agents")
+			Timer.push("Caching Agents")
 			Progress.setProgressStatus( "Caching..." )
 
 			meshes = []
@@ -459,32 +453,32 @@ class MayaScene:
 			for switch in switches:
 				mc.setAttr( "%s.playFromCache" % switch, True )
 			Progress.advanceProgress( cacheIncrement )
-			Timer.stop("Caching Agents")
+			Timer.pop()
 	
 			if self.sceneDesc.deleteSkeleton:
 				# After creating a geometry cache the skeleton, anim curves, and
 				# skin clusters are no longer needed to playback the sim. To save
 				# memory the user can choose to delete them.
 				#
-				Timer.start("Deleting Skeletons")
+				Timer.push("Deleting Skeletons")
 				Progress.setProgressStatus( "%s: Deleting skeleton..." % mayaAgent.name() )
 				for mayaAgent in mayaAgents:
 					mayaAgent.deleteSkeleton()
 				Progress.advanceProgress( deleteIncrement )
-				Timer.stop("Deleting Skeletons")
+				Timer.pop()
 
 		if self.sceneDesc.loadPrimitives:
 			if self.sceneDesc.instancePrimitives:
 				# Add the shading assignments that were postponed by the use
 				# of the -noConnections flag when creating the instances
 				#
-				Timer.start("Assign Primitive Shading")
+				Timer.push("Assign Primitive Shading")
 				Progress.setProgressStatus( "Shading Primitives..." )
 				masters = mc.listRelatives(self._getPrimitiveCacheGroup(), allDescendents=True)
 				primitives = mc.ls( masters, allPaths=True, type="shape")
 				mc.sets( primitives, edit=True, forceElement="initialShadingGroup" )
 				Progress.advanceProgress( shadingIncrement )
-				Timer.stop("Assign Primitive Shading")
+				Timer.pop()
 			else:
 				mc.delete(self._getPrimitiveCacheGroup())
 	

@@ -26,6 +26,7 @@ import re
 import os.path
 
 import ns.py.Timer as Timer
+import ns.maya.msv.AgentDescription as AgentDescription
 
 class Agent:
 	def __init__(self):
@@ -35,7 +36,7 @@ class Agent:
 		self.name = ""
 		self.id = -1
 		self.agentDesc = None
-		self.sim = None
+		self.sim = AgentDescription.Sim()
 		self.variableValues = {}
  		self.placement = [ 1.0, 0.0, 0.0, 0.0, \
 						   0.0, 1.0, 0.0, 0.0, \

@@ -22,44 +22,72 @@
 
 import time
 
+import Errors
+
 class _Timer:
 	def __init__(self):
 		self.start = -1.0
 		self.elapsed = 0.0
 
 _timers = {}
+_timerStack = []
+_timerNames = {}
 
-def _getTimer(name):
+def _timerName(name):
+	n = ""
+	try:
+		n = _timerNames[name]
+	except:
+		n = name
+		if _timerStack:
+			prefix = " > ".join( _timerStack )
+			n = "%s > %s" % (prefix, name)
+	return n
+
+def _pushTimer(name):
+	global _timers
+	global _timerStack
+	global _timerOrder
+	global _timerNames
+	
+	n = _timerName(name)
+	_timerStack.append( name )
+	_timerNames[name] = n
+
 	timer = None
 	try:
-		timer = _timers[name]
+		timer = _timers[n]
 	except:
 		timer = _Timer()
-		_timers[name] = timer
+		_timers[n] = timer
 	return timer
 
-def start(name):
+def _popTimer():
+	global _timers
+	global _timerStack
+
+	n = _timerName(_timerStack.pop())
+	return _timers[n]
+
+def push(name):
 	# If the timer was already running this will restart it
-	_getTimer(name).start = time.time()
+	_pushTimer(name).start = time.time()
 	
-def stop(name):
-	timer = _getTimer(name)
+def pop():
+	timer = _popTimer()
 	if timer.start >= 0:
 		timer.elapsed += time.time() - timer.start
 		timer.start = -1.0
 	return timer.elapsed
 
 def elapsed(name):
-	return _getTimer(name).elapsed
+	n = _timerName(name)
+	return _timers[n].elapsed
 
 def names():
-	return _timers.keys()
+	return _timerNames.values()
 
 def deleteAll():
 	_timers = {}
-
-def delete(name):
-	try:
-		_timers.pop(name)
-	except:
-		pass
+	_timerStack = []
+	_timerNames = {}

@@ -24,21 +24,42 @@ import sys
 import maya.OpenMayaMPx as OpenMayaMPx
 
 import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
+import ns.maya.msv.MsvMeshRegulator as MsvMeshRegulator
 
 # initialize the script plug-in
 def initializePlugin(oPlugin):
-    fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
-    try:
-        fPlugin.registerCommand( MsvImporterCmd.kName, MsvImporterCmd.creator, MsvImporterCmd.syntaxCreator )
-    except:
-        sys.stderr.write( "Failed to register command: %s" % MsvImporterCmd.kName )
-        raise
+	fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
+	try:
+		fPlugin.registerCommand( MsvImporterCmd.kName,
+								 MsvImporterCmd.creator,
+								 MsvImporterCmd.syntaxCreator )
+	except:
+		sys.stderr.write( "Failed to register command: %s" % MsvImporterCmd.kName )
+		raise
+	
+	try:
+		fPlugin.registerNode( MsvMeshRegulator.kName,
+							  MsvMeshRegulator.kId,
+							  MsvMeshRegulator.nodeCreator,
+							  MsvMeshRegulator.nodeInitializer )
+	except:
+		sys.stderr.write( "Failed to register node: %s" % MsvMeshRegulator.kName )
+		raise
+
+
 
 # uninitialize the script plug-in
 def uninitializePlugin(oPlugin):
-    fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
-    try:
-        fPlugin.deregisterCommand( MsvImporterCmd.kName )
-    except:
-        sys.stderr.write( "Failed to deregister command: %s" % MsvImporterCmd.kName )
-        raise
+	fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
+	try:
+		fPlugin.deregisterCommand( MsvImporterCmd.kName )
+	except:
+		sys.stderr.write( "Failed to deregister command: %s" % MsvImporterCmd.kName )
+		raise
+	   
+	try:
+		fPlugin.deregisterNode( MsvMeshRegulator.kId )
+	except:
+		sys.stderr.write( "Failed to deregister node: %s" % MsvMeshRegulator.kName )
+		raise
+	

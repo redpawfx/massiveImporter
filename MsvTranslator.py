@@ -68,7 +68,7 @@ def mayaFileSuffix(outputType):
 		raise Exception("%s is not a valid Maya file type." % outputType)
 
 def main():
-	Timer.start("MsvTranslator")
+	Timer.push("MsvTranslator")
 	
 	(args, flags) = parseArgs()
 	
@@ -122,7 +122,7 @@ def main():
 		print >> sys.stderr, batchCmd
 		os.system(batchCmd)
 		
-	Timer.stop("MsvTranslator")
+	Timer.pop()
 		
 	print >> sys.stderr, ""
 	print >> sys.stderr, "######################################################################"

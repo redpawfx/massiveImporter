@@ -196,7 +196,7 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 				try:
 					mc.undoInfo( state=False )
 					
-					Timer.start("TOTAL")
+					Timer.push("TOTAL")
 					Progress.setTitle("Reading Files")
 					sceneDesc = SceneDescription.SceneDescription(self._options)
 					sceneDesc.load( readProgress )
@@ -206,9 +206,9 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 					scene = MayaScene.MayaScene()
 					scene.build( sceneDesc, buildProgress )
 					Progress.setProgress( readProgress + buildProgress )
-					Timer.stop("TOTAL")
+					Timer.pop()
 						
-					for timer in Timer.names():
+					for timer in sorted(Timer.names()):
 						print "%s: %f" % (timer, Timer.elapsed(timer))
 					Timer.deleteAll()
 					

@@ -39,6 +39,11 @@ _animatable = ('rx', 'ry', 'rz', 'tx', 'ty', 'tz')
 _rotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz', 4], ['zyx', 5]])	
 _masterSegments = {}
 
+def getDescendentShapes( name ):
+	descendents = mc.listRelatives( name, allDescendents=True, fullPath=True )
+	shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
+	return shapes
+
 def setMultiAttr( multiAttr, values, childAttr="" ):
 	# Python allows a maximum of 255 arguments to a function/method call
 	# so the maximum number of values we can process in a single setAttr
@@ -155,10 +160,25 @@ class MayaMaterial:
 		self.sgName = self._agent.mayaScene.buildMaterial( self )		
 
 class MayaSkin:
-	def __init__(self):
-		self.groupName = ""
+	def __init__(self, group, name, parent=""):
+		self.groupName = group
 		self._shapeName = ""
 		self.chunks = {}
+		
+		if "|" == parent:
+			# Parent to world
+			[self.groupName] = mc.parent( self.groupName, world=True )
+		elif "" != parent:
+			# Parent to 'parent'
+			[self.groupName] = mc.parent( self.groupName, parent, relative=True )
+		# Try and set the name - if there's a name clash the actual
+		# name may differ from 'name'. Store the actual name.
+		self.groupName = mc.rename( self.groupName, name )
+		[self.groupName] = mc.ls(self.groupName, long=True)
+		# Find an store the shape name
+		shapes = getDescendentShapes( self.groupName )
+		if shapes:
+			self._shapeName = shapes[len(self.groupName) + 1:]
 	
 	def addChunk(self, deformer, chunk):
 		'''Strip out the group name from the chunk path. This assumes
@@ -186,9 +206,6 @@ class MayaSkin:
 			return chunk
 		else:
 			return "%s|%s" % (self.groupName, chunk)
-
-	def setShapeName(self, name):
-		self._shapeName = name[len(self.groupName) + 1:]
 
 	def shapeName(self):
 		return "%s|%s" % (self.groupName, self._shapeName)
@@ -745,9 +762,9 @@ class MayaAgent:
 			self.buildSkeleton()
 		
 		if self.sceneDesc().loadGeometry:
-			Timer.start("Build Geometry")
+			Timer.push("Build Geometry")
 			self.buildGeometry()
-			Timer.stop("Build Geometry")
+			Timer.pop()
 		
 		# Make sure the agent scale doesn't also scale the translate values of
 		# the sim data. We have to freeze the transform here since we won't
@@ -756,15 +773,15 @@ class MayaAgent:
 		self.freezeAgentScale()
 		
 		if self.sceneDesc().loadPrimitives:
-			Timer.start("Build Primitives")
+			Timer.push("Build Primitives")
 			self.buildPrimitives()
-			Timer.stop("Build Primitives")
+			Timer.pop()
 					
 		if self.sceneDesc().loadSkin:
-			Timer.start("Bind Skin")
+			Timer.push("Bind Skin")
 			self.setBindPose()
 			self.bindSkin()
-			Timer.stop("Bind Skin")
+			Timer.pop()
 		
 		if self.sceneDesc().loadSkeleton:
 			# Has to happen after skin is bound
@@ -780,8 +797,6 @@ class MayaAgent:
 			
 	def loadSim( self ):
 		sim = self._msvAgent.sim
-		if not sim:
-			return
 
 		for msvJointName in sim.joints.keys():
 	 		jointData = sim.joints[msvJointName]
@@ -790,7 +805,7 @@ class MayaAgent:
 	 		for channel in jointData.channels.keys():
 	 			channelEnum = AgentDescription.channel2Enum[channel]
 	 			if mayaJoint.isChannelFree( channelEnum ):
-					Timer.start("Setting Keyframe")
+					Timer.push("Setting Keyframe")
 					times = range( jointData.startFrame,
 								   jointData.startFrame + jointData.numFrames,
 								   self.sceneDesc().frameStep )
@@ -803,7 +818,7 @@ class MayaAgent:
 	 				channels = [ offset + jointData.channels[channel][i-jointData.startFrame] for i in times ]
 	 				
 	 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
-	 				Timer.stop("Setting Keyframe")
+	 				Timer.pop()
 
 	def deleteSkeleton( self ):
 		intermediateShapes = []
