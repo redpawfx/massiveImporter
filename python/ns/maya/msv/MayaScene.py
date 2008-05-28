@@ -80,6 +80,7 @@ class MayaScene:
 		meshes = mc.ls( importedNodes, long=True, type="mesh" )
 		for mesh in meshes:
 			mc.polySoftEdge( mesh, a=180, ch=False )
+			mc.polySubdivideFacet( mesh, divisions=0, ch=False )
 		[newGroup] = mc.ls( importedNodes, long=True, assemblies=True )
 		return newGroup
 
@@ -150,10 +151,8 @@ class MayaScene:
 		   desired, chunk it up'''
 		skin = MayaAgent.MayaSkin( group=self.importObj( msvGeometry.file, groupName ),
 								   name=groupName,
-								   parent=self._getGeoMastersGroup() )
- 		
- 		#regulator = mc.createNode( "msvMeshRegulator", name="regulator", skipSelect=True )
- 		#mc.connectAttr( "%s.outMesh" % skin.shapeName(), "%s.inMesh" % regulator )
+								   parent=self._getGeoMastersGroup(),
+								   master=True )
  
 		if ( not msvGeometry.attach and
 			 SceneDescription.eSkinType.smooth != self.sceneDesc.skinType ):
@@ -169,10 +168,10 @@ class MayaScene:
 			# or has weights and is to be smooth skinned - no chunking
 			# is necessary so do a standard duplicate
 			#
-			group = mc.duplicate( skin.groupName, name=groupName,
-								  returnRootsOnly=True,
-						  		  upstreamNodes=False, inputConnections=False )
-			copy = MayaAgent.MayaSkin( group=group, name=groupName, parent="|" )
+			#group = mc.duplicate( skin.groupName, name=groupName,
+			#					  returnRootsOnly=True,
+			#			  		  upstreamNodes=False, inputConnections=False )
+			copy = skin.duplicate(groupName)
 		elif SceneDescription.eSkinType.duplicate == self.sceneDesc.skinType:
 			# destination geometry is skinnable and the user has chosen
 			# to do a chunk skinning using chunk duplicates. Go through
@@ -399,6 +398,8 @@ class MayaScene:
 			mayaAgent.build( self )
 			Progress.advanceProgress( agentIncrement )
 			Timer.pop()
+			
+			continue
 				
 			Timer.push("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
