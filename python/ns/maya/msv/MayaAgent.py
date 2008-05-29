@@ -40,7 +40,9 @@ _rotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz'
 _masterSegments = {}
 
 def getDescendentShapes( name ):
-	return mc.listRelatives(name, type='shape', fullPath=True, allDescendents=True)
+	descendents = mc.listRelatives( name, allDescendents=True, fullPath=True )
+	shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
+	return shapes
 
 def setMultiAttr( multiAttr, values, childAttr="" ):
 	# Python allows a maximum of 255 arguments to a function/method call
@@ -158,12 +160,9 @@ class MayaMaterial:
 		self.sgName = self._agent.mayaScene.buildMaterial( self )		
 
 class MayaSkin:
-	def __init__(self, group, name, parent="", master=False):
+	def __init__(self, group, name, parent=""):
 		self.groupName = group
 		self._shapeName = ""
-		self._master = master
-		self._regulator = ""
-		self._regulatorIndex = 0
 		self.chunks = {}
 		
 		if "|" == parent:
@@ -179,48 +178,8 @@ class MayaSkin:
 		# Find an store the shape name
 		shapes = getDescendentShapes( self.groupName )
 		if shapes:
-			self._shapeName = shapes[0][len(self.groupName) + 1:]
-		
-		if self._master:
-			self._regulator = mc.createNode( "msvMeshRegulator", name="regulator", skipSelect=True )
- 			mc.connectAttr( "%s.outMesh" % self.shapeName(), "%s.inMesh" % self._regulator )
+			self._shapeName = shapes[len(self.groupName) + 1:]
 	
-	def duplicate(self, dupName):
-		if not self._master:
-			raise Errors.BadArgumentException("Attempting to copy a non-master MayaSkin object.")
-		
-		group = mc.duplicate( self.groupName, name=dupName,
-							  returnRootsOnly=True,
-					  		  upstreamNodes=False, inputConnections=False,
-					  		  parentOnly=True )
-		transform = mc.createNode( "transform", parent=group[0], name="polySurface1" )
-		shape = mc.createNode( "mesh", parent=transform, name="polySurfaceShape1" )
-		mc.setAttr( "%s.passThrough[%d]" % (self._regulator, self._regulatorIndex), 1 )
-		mc.connectAttr( "%s.outMeshes[%d]" % (self._regulator, self._regulatorIndex),
-						"%s.inMesh" % shape )
-		dup = MayaSkin( group=group, name=dupName, parent="|" )
-		# for non-master objects, _regulatorIndex stores which regulator
-		# index controls their geometry
-		dup.setRegulator( self._regulator, self._regulatorIndex )
-		# for master objects _regulatorIndex stores the next 
-		# index to connect duplicates to
-		self._regulatorIndex += 1
-		return dup
-
-	
-	def unload(self):
-		if self._master:
-			raise Errors.BadArgumentException("Can't unload a master MayaSkin object.")
-		if not self._regulator:
-			raise Errors.Error("MayaSkin object does not have a regulator.")
-		mc.setAttr( "%s.passThrough[%d]" % (self._regulator, self._regulatorIndex), 0 )
-		
-	def setRegulator( self, regulator, regulatorIndex ):
-		if self._master:
-			raise Errors.BadArgumentException("Can't set the regulator of a master MayaSkin object.")
-		self._regulator = regulator
-		self._regulatorIndex = regulatorIndex
-		
 	def addChunk(self, deformer, chunk):
 		'''Strip out the group name from the chunk path. This assumes
 		   that the chunk is a child of the group - which it should be'''
@@ -241,6 +200,7 @@ class MayaSkin:
 			self.chunks[deformer] = chunk
 		return True
 			
+
 	def chunkName(self, chunk):
 		if "|" == chunk[0] :
 			return chunk
@@ -285,12 +245,6 @@ class MayaGeometry:
 	
 	def file( self ):
 		return self.msvGeometry.file
-	
-	def unload( self ):
-		if self.skin:
-			self.skin.unload()
-		else:
-			raise Errors.UnsupportedEdrror("Non-skin geometry can not be unloaded.")
 	
 	def build( self ):
 		if not self.msvGeometry.file:
@@ -755,7 +709,7 @@ class MayaAgent:
  		self._bindPose = mc.dagPose(self.rootJoint.name, save=True, bindPose=True, name=(self.name() + "Bind"))
 
  	def _createSkinCluster( self, geometry ):
- 		[ shape ] = getDescendentShapes( geometry.name() )
+ 		[ shape ] = mc.listRelatives(geometry.name(), type='shape', fullPath=True, allDescendents=True)
 		
 		deformers = [ self.joint(deformer).name for deformer in geometry.deformers() ]
 					
@@ -799,22 +753,18 @@ class MayaAgent:
 			if SceneDescription.eSkinType.smooth == self.sceneDesc().skinType:
 				self._createSkinCluster( geometry )
 			elif geometry.skin.bindChunks(self):
-				mc.delete(geometry.name())	
-				
-			geometry.unload()	
+				mc.delete(geometry.name())		
 		
 	def build( self, mayaScene ):
 		self.mayaScene = mayaScene
 
-		#if self.sceneDesc().loadSkeleton:
-		#	self.buildSkeleton()
+		if self.sceneDesc().loadSkeleton:
+			self.buildSkeleton()
 		
 		if self.sceneDesc().loadGeometry:
 			Timer.push("Build Geometry")
 			self.buildGeometry()
 			Timer.pop()
-		
-		return
 		
 		# Make sure the agent scale doesn't also scale the translate values of
 		# the sim data. We have to freeze the transform here since we won't
