@@ -19,15 +19,12 @@ class RollbackImporter:
 		self.ignore = ignore
 		
 	def _import(self, name, globals=None, locals=None, fromlist=[]):
-		print >> sys.stderr, "_import %s" % name
 		result = apply(self.realImport, (name, globals, locals, fromlist))
 		self.newModules[name] = 1
 		return result
 		
 	def uninstall(self):
-		print >> sys.stderr, "uninstall"
 		for modname in self.newModules.keys():
-			print >> sys.stderr, "modname: %s" % modname
 			# Don't uninstall modules that were imported prior to the 
 			# RollbackImporter being initialized
 			#
