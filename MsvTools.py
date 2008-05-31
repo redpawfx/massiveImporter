@@ -23,8 +23,22 @@
 import sys
 import maya.OpenMayaMPx as OpenMayaMPx
 
+from ns.py import RollbackImporter
+
+# Any modules imported after the RollbackImporter is instantiated
+# will be unloaded when the plugin is unloaded. This guarantees
+# that when the plug-in is reloaded, all modules will be reloaded
+# as well. This helps during development as it is not
+# necessary to restart maya for python changes to take effect.
+#
+# Passing in "OpenMaya" tells the RollbackImporter to ignore the
+# OpenMaya* modules.
+#
+importer = RollbackImporter.RollbackImporter("OpenMaya")
+
 import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
 import ns.maya.msv.MsvMeshRegulator as MsvMeshRegulator
+import ns.maya.msv.MsvSimLoader as MsvSimLoader
 
 # initialize the script plug-in
 def initializePlugin(oPlugin):
@@ -45,6 +59,15 @@ def initializePlugin(oPlugin):
 	except:
 		sys.stderr.write( "Failed to register node: %s" % MsvMeshRegulator.kName )
 		raise
+	
+	try:
+		fPlugin.registerNode( MsvSimLoader.kName,
+							  MsvSimLoader.kId,
+							  MsvSimLoader.nodeCreator,
+							  MsvSimLoader.nodeInitializer )
+	except:
+		sys.stderr.write( "Failed to register node: %s" % MsvSimLoader.kName )
+		raise
 
 
 
@@ -62,4 +85,15 @@ def uninitializePlugin(oPlugin):
 	except:
 		sys.stderr.write( "Failed to deregister node: %s" % MsvMeshRegulator.kName )
 		raise
+	
+	try:
+		fPlugin.deregisterNode( MsvSimLoader.kId )
+	except:
+		sys.stderr.write( "Failed to deregister node: %s" % MsvSimLoader.kName )
+		raise
+
+	# Unload all modules.
+	#
+	global importer
+	importer.uninstall()
 	
