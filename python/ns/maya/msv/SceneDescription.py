@@ -20,6 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+'''Loads Massive specific data from Massive files. This class is later
+   passed to the XXXScene class of the appropriate 3rd party software (just
+   MayaScene for now), to handle translating the Massive data into something
+   that application understands.'''
+
+
 import sys
 import os.path
 
@@ -34,6 +40,7 @@ import ns.maya.msv.CallsheetReader as CallsheetReader
 import ns.maya.msv.Agent as Agent
 import ns.maya.msv.AgentDescription as AgentDescription
 import ns.maya.Progress as Progress
+import ns.maya.msv.Sim as Sim
 
 class eSkinType:
 	smooth, duplicate, instance = range(3)
@@ -189,15 +196,19 @@ class SceneDescription:
 			self._selectionGroup.addSelection( "NimbleMsv", sel )
 
 	def baseName(self):
+		'''MAS file name without the extension.'''
 		return os.path.splitext(self._masFile)[0]
 
 	def resolvePath(self, path):
+		'''If path is not absolute, assume it is relative to the MAS file
+		   directory.'''
 		resolved = path
 		if not os.path.isabs(resolved):
 			resolved = "%s/%s" % (self._path, path)
 		return resolved
 
 	def terrainFile(self):
+		'''Path to the terrain file.'''
 		if self._terrainFile:
 			return self.resolvePath( self._terrainFile )
 		else:
@@ -213,12 +224,13 @@ class SceneDescription:
 				cdlReader = CDLReader.CDLReader()
 				agentDesc = cdlReader.read( key )
 				if type:
-					# By default an agent's type will be determined by the object
-					# keyword in the CDL file. However if the agent is being loaded
-					# as part of a Massive Scene, the agent type will be determined
-					# by the group keyword in the MAS file. This prevents agent
-					# type name clashes as the MAS file agent type includes an id
-					# unique within the Massive scene.
+					# By default an agent's type will be determined by the
+					# object keyword in the CDL file. However if the agent is
+					# being loaded as part of a Massive Scene, the agent type
+					# will be determined by the group keyword in the MAS file.
+					# This prevents agent type name clashes as the MAS file
+					# agent type includes an id unique within the Massive
+					# scene.
 					#
 					agentDesc.agentType = type
 				# Hash the description twice. If a callsheet is not provided
@@ -256,7 +268,7 @@ class SceneDescription:
 		try:
 			agentId = self.agentByName(agentName).id
 		except:
-			agentId = agentName.split("_")[1]
+			agentId = int(agentName.split("_")[-1])
 		return agentId
 		
 	def agents( self ):
@@ -264,9 +276,6 @@ class SceneDescription:
 
 	def numAgents( self ):
 		return len(self.agents())
-
-	def isAgentIncluded( self, id ):
-		return self._selectionGroup.contains(id)
 
 	def buildAgent( self, agentName, id = -1, agentDesc = None ):
 		'''If the given agent already exists, return it. Otherwise guess
@@ -278,7 +287,7 @@ class SceneDescription:
 		if id < 0:
 			id = self.agentId( agentName )
 			
-		if not self.isAgentIncluded( id ):
+		if not self._selectionGroup.contains( id ):
 			# Filter out non-selected agents
 			#
 			return None
@@ -290,9 +299,7 @@ class SceneDescription:
 			# provided) - build one *if* the agentType is defined. The
 			# agentType should have already been defined if a CDL file
 			# was specified in the MAS file for the agentType.
-			#
-			if id < 0:
-				id = self.agentId( agentName )
+			#)
 			if not agentDesc:
 				agentDesc = self.agentDesc( self.agentType( agentName ) )
 			
@@ -318,11 +325,14 @@ class SceneDescription:
 		#
 		if self._masFile:
 			resolvedPath = self.resolvePath(self._masFile)
+			
 			Progress.setProgressStatus(os.path.basename(resolvedPath))
 			Timer.push("Read MAS")
+			
 			mas = MasReader.read( resolvedPath )
 			self._terrainFile = mas.terrainFile
 			self._cdlFiles = mas.cdlFiles
+			
 			Timer.pop()
 			Progress.advanceProgress( masProgress )
 
@@ -365,7 +375,11 @@ class SceneDescription:
 		#
 		if self._simDir:
 			resolvedSimDir = self.resolvePath(self._simDir)
-			SimReader.read( resolvedSimDir, self.simType, self, simProgress )
+			sim = Sim.Sim(self._selectionGroup)
+			SimReader.read( resolvedSimDir, self.simType, sim, simProgress )
+			for agentSim in sim.agents():
+				agent = self.agentByName( agentSim.name() )
+				agent.setSim( agentSim )
 
 
 				

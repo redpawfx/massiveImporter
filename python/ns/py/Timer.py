@@ -22,8 +22,6 @@
 
 import time
 
-import Errors
-
 class _Timer:
 	def __init__(self):
 		self.start = -1.0
@@ -47,7 +45,6 @@ def _timerName(name):
 def _pushTimer(name):
 	global _timers
 	global _timerStack
-	global _timerOrder
 	global _timerNames
 	
 	n = _timerName(name)
@@ -88,6 +85,10 @@ def names():
 	return _timerNames.values()
 
 def deleteAll():
+	global _timers
+	global _timerStack
+	global _timerNames
+	
 	_timers = {}
 	_timerStack = []
 	_timerNames = {}

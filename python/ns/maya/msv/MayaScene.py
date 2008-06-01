@@ -388,20 +388,23 @@ class MayaScene:
 			self.importObj( self.sceneDesc.terrainFile(), "terrain" )
 			
 		mayaAgents = []
-		startFrame = -1
-		endFrame = -1
+		startFrame = -sys.maxint
+		endFrame = -sys.maxint
 		
 		for msvAgent in self.sceneDesc.agents():
 			mayaAgent = MayaAgent.MayaAgent( msvAgent )
 			
 			Timer.push("Build Agent")
 			Progress.setProgressStatus( "%s: Building..." % mayaAgent.name() )
+			
 			mayaAgent.build( self )
+			
 			Progress.advanceProgress( agentIncrement )
 			Timer.pop()
 				
 			Timer.push("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
+			
 			mayaAgent.loadSim()
 			
 			# Presumably every agent will be simmed over the same frame
@@ -410,10 +413,10 @@ class MayaScene:
 			# and latest endFrame
 			#
 			if mayaAgent.sim:
-				if -1 == startFrame or mayaAgent.sim().startFrame < startFrame:
-					startFrame = mayaAgent.sim().startFrame
-				if -1 == endFrame or mayaAgent.sim().endFrame > endFrame:
-					endFrame = mayaAgent.sim().endFrame
+				if -sys.maxint == startFrame or mayaAgent.sim().startFrame() < startFrame:
+					startFrame = mayaAgent.sim().startFrame()
+				if -sys.maxint == endFrame or mayaAgent.sim().endFrame() > endFrame:
+					endFrame = mayaAgent.sim().endFrame()
 			
 			Progress.advanceProgress( simIncrement )
 			Timer.pop()
@@ -430,7 +433,6 @@ class MayaScene:
 			meshes = []
 			for mayaAgent in mayaAgents:
 				meshes.extend( [ geometry.shapeName() for geometry in mayaAgent.geometryData ] )
-			
 			cacheFileName = "%s_%s" % (sceneDesc.baseName(), sceneDesc.range)
 			
 			mc.cacheFile( directory=self.sceneDesc.cacheDir,
@@ -443,6 +445,14 @@ class MayaScene:
 						  startTime=startFrame,
 						  endTime=endFrame,
 						  points=meshes )
+			
+			# There's a bug in maya where cacheFile will sometimes write a
+			# partial path into the cache instead of the full path. To makes
+			# sure the attachFile works, we have to query the actual channel
+			# names
+			cacheFileFullName = "%s/%s.xml" % (self.sceneDesc.cacheDir, cacheFileName)
+			meshes = mc.cacheFile( query=True, fileName=cacheFileFullName, channelName=True )
+			
 			switches = [ maya.mel.eval( 'createHistorySwitch( "%s", false )' % mesh ) for mesh in meshes ]
 			switchAttrs = [ ( "%s.inp[0]" % switch ) for switch in switches ]
 			mc.cacheFile( attachFile=True,

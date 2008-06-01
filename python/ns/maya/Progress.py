@@ -32,10 +32,13 @@ from maya.OpenMaya import MGlobal
 import ns.py as npy
 import ns.py.Errors
 
+_progressing = False
 _uiProgress = False
 
 def reset( maxRange ):
 	global _uiProgress
+	global _progressing
+	_progressing = True
 	_uiProgress = (MGlobal.mayaState() == MGlobal.kInteractive)
 	if _uiProgress:
 		MProgressWindow.reserve()
@@ -45,30 +48,43 @@ def reset( maxRange ):
 		MProgressWindow.setInterruptable( True )
 	
 def stop():
+	global _progressing
+
 	if _uiProgress:
 		MProgressWindow.endProgress()
+	_progressing = False
 
 def checkForCancel():
+	if not _progressing:
+		return
 	if _uiProgress:
 		if MProgressWindow.isCancelled():
 			raise npy.Errors.AbortError("Operation cancelled by user")
 
 def setTitle( title ):
+	if not _progressing:
+		return
 	if _uiProgress:
 		MProgressWindow.setTitle( title )
 
 def setProgressStatus( status ):
+	if not _progressing:
+		return
 	if _uiProgress:
 		MProgressWindow.setProgressStatus( status )
 	else:
 		print >> sys.stderr, "### %s" % status
 	
 def setProgress( progress ):
+	if not _progressing:
+		return
 	if _uiProgress:
 		MProgressWindow.setProgress( progress )
 		checkForCancel()
 	
 def advanceProgress( progress ):
+	if not _progressing:
+		return
 	if _uiProgress:
 		MProgressWindow.advanceProgress( progress )
 		checkForCancel()

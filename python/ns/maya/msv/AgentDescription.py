@@ -28,6 +28,7 @@ import ns.maya.msv.WReader as WReader
 
 kTX, kTY, kTZ, kRX, kRY, kRZ = range(6)
 channel2Enum = dict([["tx", kTX], ["ty", kTY], ["tz", kTZ], ["rx", kRX], ["ry", kRY], ["rz", kRZ]])
+enum2Channel = ["tx", "ty", "tz", "rx", "ry", "rz"]
 def isRotateEnum( channelEnum ):
 	return channelEnum >= kRX
 
@@ -228,57 +229,6 @@ class Variable:
 		self.default = 0.0
 		self.expression = ""
 
-
-class SimJoint:
-	def __init__(self):
-		self.channels = dict([["tx", []], ["ty", []], ["tz", []], ["rx", []], ["ry", []], ["rz", []]])
-		self.numFrames = 0
-		self.startFrame = 0
-	
-	def addSample(self, frame, rotate, translate):
-		index = (frame - self.startFrame)
-		if index >= self.numFrames:
-			extraFrames = (frame - self.numFrames + 1)
-			if 1 == extraFrames:
-				for channel in self.channels.values():
-					channel.append( 0.0 )
-			else:
-				for channel in self.channels.values():
-					channel.extend( [ 0.0 ] * extraFrames )
-			self.numFrames = frame + 1
-		self.channels["rx"][index] = rotate[0]
-		self.channels["ry"][index] = rotate[1]
-		self.channels["rz"][index] = rotate[2]
-		self.channels["tx"][index] = translate[0]
-		self.channels["ty"][index] = translate[1]
-		self.channels["tz"][index] = translate[2]
-		
-		
-
-class Sim:
-	def __init__(self):
-		self.options = {}
-		self.joints = {}
-		self.agentName = ""
-		self.agentType = ""
-		self.startFrame = None
-		self.endFrame = None
-	
-	def addSample(self, frame, joint, rotate, translate ):
-		jointData = None
-		try:
-			jointData = self.joints[joint]
-		except:
-			jointData = SimJoint()
-			jointData.startFrame = frame
-			self.joints[joint] = jointData
-		
-		jointData.addSample( frame, rotate, translate )
-		if None == self.startFrame or frame < self.startFrame:
-			self.startFrame = frame
-		if None == self.endFrame or frame > self.endFrame:
-			self.endFrame = frame
-
 # Node definition
 class AgentDescription:
 	def __init__(self):
@@ -288,6 +238,7 @@ class AgentDescription:
 		self.cdl = ""
 		self.agentType = ""
 		self.scaleVar = ""
+		# represented as Sim.Joint - but there will only be one frame of data
 		self.bindPoseData = None
 		self.jointData = []
 		self.geoDB = GeoDB()
@@ -296,4 +247,12 @@ class AgentDescription:
 		self.variables = {}
 		# map Massive joint name to the joint object
 		self.joints = {}
+		
+	def setBindPose(self, agentSim):
+		self.bindPoseData = agentSim
+		self.bindPoseData.prune( self.joints.keys() )
+		for jointSim in self.bindPoseData.joints():
+			joint = self.joints[ jointSim.name() ]
+			jointSim.setOrderDOF( joint.order, joint.dof )
+
    

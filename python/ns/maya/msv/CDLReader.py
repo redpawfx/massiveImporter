@@ -26,6 +26,7 @@ import os.path
 import ns.maya.msv.AMCReader as AMCReader
 import ns.maya.msv.WReader as WReader
 import ns.maya.msv.AgentDescription as AgentDescription
+import ns.maya.msv.Sim as Sim
 
 
 # Node definition
@@ -463,7 +464,10 @@ class CDLReader:
 			fileHandle.close()
 			
 			if self._bindPoseFile:
-				self.agent.bindPoseData = AMCReader.read( self._bindPoseFile, self.agent )
+				amcFile = AMCReader.AMCReader( self._bindPoseFile )
+				sim = Sim.Sim()
+				amcFile.read( sim )
+				self.agent.setBindPose( sim.agent( amcFile.agentName ) )
 				
 			return self.agent
 			

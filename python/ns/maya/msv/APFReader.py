@@ -20,76 +20,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+'''Read animation data from an APF file.'''
+
 import sys
 import os.path
 
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.maya.msv.Sim as Sim
 
-def read(fullName, sceneDesc, frame):
-	'''Load animation data from an APF file. Adds a single frame's
-	   worth of animation data to each agent'''
- 
- 	try:
- 		path = os.path.dirname( fullName )
- 		
- 		fileHandle = open(fullName, "r")
- 		
- 		agent = None
- 		
- 		for line in fileHandle:
- 			tokens = line.strip().split()
- 			if tokens:
- 				if tokens[0] == "BEGIN":
- 					agent = sceneDesc.buildAgent( tokens[1] )
- 					
- 					if not agent:
-						# Agent is not in one of the chosen "selections"
-						#
-						continue
- 					
- 					if not agent.sim:
- 						agent.sim = AgentDescription.Sim()
- 				elif agent:
- 					jointName = tokens[0]
- 					try:
- 						joint = agent.msvJoint( jointName )
- 					except:
- 						continue
- 					
- 					dof = joint.dof
- 					order = joint.order
- 					
-					rotate = [ 0.0, 0.0, 0.0 ]
- 					translate = [ 0.0, 0.0, 0.0 ]
- 						 					
- 					i = 1
- 					# Determine degrees of freedom and use them to figure out
- 					# which tokens correspond to which channels
- 					#
- 					for channel in order:
- 						if not dof[channel]:
- 							continue
- 						
- 						if AgentDescription.kRX == channel:
- 							rotate[0] = float(tokens[i])
- 						elif AgentDescription.kRY == channel:
- 							rotate[1] = float(tokens[i])
- 						elif AgentDescription.kRZ == channel:
- 							rotate[2] = float(tokens[i])
- 						elif AgentDescription.kTX == channel:
- 							translate[0] = float(tokens[i])
- 						elif AgentDescription.kTY == channel:
- 							translate[1] = float(tokens[i])
- 						elif AgentDescription.kTZ == channel:
- 							translate[2] = float(tokens[i])
- 						i += 1
- 					
- 					agent.sim.addSample( frame, jointName, rotate, translate )
-	 		
-	 	fileHandle.close()
-	 		
- 	except:
- 		print >> sys.stderr, "Error reading APF file: %s" % fullName	
- 		raise
+class APFReader:
+	def __init__(self, fullName):
+		'''Initialize the APF reader by parsing the file name. APF sim files
+		   are named: frame.#.apf where # is the current frame'''
+		tokens = os.path.basename( fullName ).split(".")
+		self.frame = int(tokens[1])
+		self.fullName = fullName
 
-        
+	def read(self, sim):
+		'''Load animation data from an APF file. Adds a single frame's
+		   worth of animation data to each agent'''
+	 
+	 	# Python 2.4 limitation: try... except: finally: doesn't work,
+	 	# have to nest try... except: in try... finally:
+		try:
+			try:
+		 		path = os.path.dirname( self.fullName )
+		 		fileHandle = open(self.fullName, "r")
+		 		agent = None
+		 		
+		 		for line in fileHandle:
+		 			tokens = line.strip().split()
+		 			if tokens:
+		 				if tokens[0] == "BEGIN":
+		 					agent = sim.agent( tokens[1] )
+		 					if not agent:
+								# Agent is not in one of the chosen "selections"
+								#
+								continue
+		 				elif agent:
+		 					jointName = tokens[0]
+		 					
+		 					data = []
+		 					for i in range(1, len(tokens)):
+		 						data.append(float(tokens[i]))
+		 					
+		 					agent.addSample( jointName, self.frame, data ) 
+			except:
+				print >> sys.stderr, "Error reading APF file: %s" % self.fullName	
+				raise
+		finally:
+			fileHandle.close()
+	 	
+	def cmp(a, b):
+		'''Comparison method used to sort APF files in order of increasing
+		   frame number.'''
+		return a.frame - b.frame
+	cmp = staticmethod(cmp)
+	
+	        

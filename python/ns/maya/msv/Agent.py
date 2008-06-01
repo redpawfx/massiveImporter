@@ -27,6 +27,7 @@ import os.path
 
 import ns.py.Timer as Timer
 import ns.maya.msv.AgentDescription as AgentDescription
+import ns.maya.msv.Sim as Sim
 
 class Agent:
 	def __init__(self):
@@ -36,15 +37,26 @@ class Agent:
 		self.name = ""
 		self.id = -1
 		self.agentDesc = None
-		self.sim = AgentDescription.Sim()
 		self.variableValues = {}
  		self.placement = [ 1.0, 0.0, 0.0, 0.0, \
 						   0.0, 1.0, 0.0, 0.0, \
 						   0.0, 0.0, 1.0, 0.0, \
 						   0.0, 0.0, 0.0, 1.0 ]
+ 		self._sim = Sim.Agent("")
 
 	def msvJoint(self, jointName):
 		return self.agentDesc.joints[jointName]
+
+	def sim(self):
+		return self._sim
+	
+	def setSim(self, sim):
+		self._sim = sim
+		self._sim.prune( self.agentDesc.joints.keys() )
+		for jointSim in self._sim.joints():
+			joint = self.msvJoint( jointSim.name() )
+			jointSim.setOrderDOF( joint.order, joint.dof )
+
 
 	def replaceEmbeddedVariables( self, s ):
 		'''Replaces variables that have been embedded in a string with their

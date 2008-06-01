@@ -178,7 +178,7 @@ class MayaSkin:
 		# Find an store the shape name
 		shapes = getDescendentShapes( self.groupName )
 		if shapes:
-			self._shapeName = shapes[len(self.groupName) + 1:]
+			self._shapeName = shapes[0][len(self.groupName) + 1:]
 	
 	def addChunk(self, deformer, chunk):
 		'''Strip out the group name from the chunk path. This assumes
@@ -557,7 +557,7 @@ class MayaAgent:
 		return self._msvAgent.agentDesc
 	
 	def sim( self ):
-		return self._msvAgent.sim
+		return self._msvAgent.sim()
 
 	def agentType( self ):
 		return self.agentDesc().agentType
@@ -694,17 +694,20 @@ class MayaAgent:
  		if not self.agentDesc().bindPoseData:
  			return
  	
- 		poseData = self.agentDesc().bindPoseData.joints
- 		
- 		for msvJointName in poseData.keys():
- 			jointData = poseData[msvJointName]
- 			mayaJoint = self.joint( msvJointName )
+ 		for jointSim in self.agentDesc().bindPoseData.joints():
+ 			mayaJoint = self.joint( jointSim.name() )
  			
  	 		# AMC describes object space transformations
  			#
- 			mc.move( jointData.channels["tx"][0], jointData.channels["ty"][0], jointData.channels["tz"][0],
+ 			mc.move( jointSim.sample("tx", jointSim.startFrame()),
+					 jointSim.sample("ty", jointSim.startFrame()),
+					 jointSim.sample("tz", jointSim.startFrame()),
 					 mayaJoint.name, objectSpace=True, relative=True )
- 			mc.xform(mayaJoint.name, rotation=(jointData.channels["rx"][0], jointData.channels["ry"][0], jointData.channels["rz"][0]), objectSpace=True, relative=True)
+ 			mc.xform( mayaJoint.name,
+					  rotation=( jointSim.sample("rx", jointSim.startFrame()),
+								 jointSim.sample("ry", jointSim.startFrame()),
+								 jointSim.sample("rz", jointSim.startFrame())),
+					  objectSpace=True, relative=True)
  		
  		self._bindPose = mc.dagPose(self.rootJoint.name, save=True, bindPose=True, name=(self.name() + "Bind"))
 
@@ -779,6 +782,7 @@ class MayaAgent:
 					
 		if self.sceneDesc().loadSkin:
 			Timer.push("Bind Skin")
+			
 			self.setBindPose()
 			self.bindSkin()
 			Timer.pop()
@@ -796,26 +800,25 @@ class MayaAgent:
 			mc.dagPose( self._zeroPose, restore=True )
 			
 	def loadSim( self ):
-		sim = self._msvAgent.sim
+		sim = self._msvAgent.sim()
 
-		for msvJointName in sim.joints.keys():
-	 		jointData = sim.joints[msvJointName]
-	 		mayaJoint = self.joint( msvJointName )
+		for jointSim in sim.joints():
+	 		mayaJoint = self.joint( jointSim.name() )
 
-	 		for channel in jointData.channels.keys():
-	 			channelEnum = AgentDescription.channel2Enum[channel]
+	 		for channelName in jointSim.channelNames():
+	 			channelEnum = AgentDescription.channel2Enum[channelName]
 	 			if mayaJoint.isChannelFree( channelEnum ):
 					Timer.push("Setting Keyframe")
-					times = range( jointData.startFrame,
-								   jointData.startFrame + jointData.numFrames,
+					times = range( jointSim.startFrame(),
+								   jointSim.startFrame() + jointSim.numFrames(),
 								   self.sceneDesc().frameStep )
-	  				mc.setKeyframe( mayaJoint.name, attribute=channel,
+	  				mc.setKeyframe( mayaJoint.name, attribute=channelName,
 									inTangentType="linear", outTangentType="linear",
 									time=times, value=0.0 )
-	 				[ animCurve ] = mc.listConnections( "%s.%s" % (mayaJoint.name, channel), source=True )
+	 				[ animCurve ] = mc.listConnections( "%s.%s" % (mayaJoint.name, channelName), source=True )
 	 				
 	 				offset = mayaJoint.channelOffsets[channelEnum]
-	 				channels = [ offset + jointData.channels[channel][i-jointData.startFrame] for i in times ]
+	 				channels = [ offset + jointSim.sample(channelName, i) for i in times ]
 	 				
 	 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
 	 				Timer.pop()

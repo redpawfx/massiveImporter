@@ -20,77 +20,65 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+'''Read animation data from an AMC file.'''
+
 import sys
 import os.path
 
+import ns.maya.msv.Sim as Sim
 import ns.maya.msv.AgentDescription as AgentDescription
 
-def read(fullName, agentDesc):
-	'''Load animation data from an AMC file, Returns a Sim object that
-	   stores some number of frames of animation data for a single agent'''
- 
-	sim = AgentDescription.Sim()
- 		
- 	try:
- 		try:
-	 		path = os.path.dirname( fullName )
-	 		
-	 		fileHandle = open(fullName, "r")
-	 		
-	 		curFrame = 0
-	 		
-	 		for line in fileHandle:
-	 			tokens = line.strip().split()
-	 			if tokens:
-	 				if tokens[0][0] == ":":
-	 					# file options
-	 					sim.options[ tokens[0][1:] ] = True
-	 				elif len(tokens) == 1:
-	 					# sample number
-	 					curFrame = int(tokens[0])
-	 				else:
-	 					jointName = tokens[0]
-	 					try:
-	 						joint = agentDesc.joints[jointName]
-	 					except:
-	 						continue
+class AMCReader:
+	def __init__(self, fullName):
+		self.fullName = fullName
+		# AMC sim files are named: agentType.#.amc where agentType.# is
+		# the name of that particular agent instance
+		#
+		tokens = os.path.basename( fullName ).split(".")
+		self.agentName = AgentDescription.formatAgentName( tokens[0], tokens[1] )
+
+	def read(self, sim):
+		'''Load animation data from an AMC file, Returns a Sim object that
+		   stores some number of frames of animation data for a single agent'''
+	 
+	 	# Python 2.4 limitation: try... except: finally: doesn't work,
+	 	# have to nest try... except: in try... finally:
+		try:
+			agent = sim.agent( self.agentName )
+			if not agent:
+				# Agent is not in one of the chosen "selections"
+				#
+				return
+			
+			path = os.path.dirname( self.fullName )
+			
+			try:
+				fileHandle = open(self.fullName, "r")
+				frame = 0
+				for line in fileHandle:
+					tokens = line.strip().split()
+					if tokens:
+						if tokens[0][0] == ":":
+							# file options
+							continue
+						elif len(tokens) == 1:
+							# sample number
+							frame = int(tokens[0])
+						else:
+							jointName = tokens[0]
 	 					
-	 					dof = joint.dof
-	 					order = joint.order
-	 					
-						rotate = [ 0.0, 0.0, 0.0 ]
-	 					translate = [ 0.0, 0.0, 0.0 ]
-	 						 					
-	 					i = 1
-	 					# Determine degrees of freedom and use them to figure out
-	 					# which tokens correspond to which channels
-	 					#
-	 					for channel in order:
-	 						if not dof[channel]:
-	 							continue
-	 						
-	 						if AgentDescription.kRX == channel:
-	 							rotate[0] = float(tokens[i])
-	 						elif AgentDescription.kRY == channel:
-	 							rotate[1] = float(tokens[i])
-	 						elif AgentDescription.kRZ == channel:
-	 							rotate[2] = float(tokens[i])
-	 						elif AgentDescription.kTX == channel:
-	 							translate[0] = float(tokens[i])
-	 						elif AgentDescription.kTY == channel:
-	 							translate[1] = float(tokens[i])
-	 						elif AgentDescription.kTZ == channel:
-	 							translate[2] = float(tokens[i])
-	 						i += 1
-	 					
-	 					sim.addSample( curFrame, jointName, rotate, translate )
-	 	finally:
-	 		fileHandle.close()
- 	except:
- 		print >> sys.stderr, "Error reading AMC file: %s" % fullName	
- 		raise
- 	
- 	return sim
+		 					data = []
+		 					for i in range(1, len(tokens)):
+		 						data.append(float(tokens[i]))
+		 					
+		 					agent.addSample( jointName, frame, data ) 
+		 	finally:
+				fileHandle.close()				
+		except:
+			print >> sys.stderr, "Error reading AMC file: %s" % self.fullName	
+			raise
+
+
 
 
         

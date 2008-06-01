@@ -210,7 +210,6 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 						
 					for timer in sorted(Timer.names()):
 						print "%s: %f" % (timer, Timer.elapsed(timer))
-					Timer.deleteAll()
 					
 					Progress.setTitle("Garbage Collecting")
 					del sceneDesc
@@ -221,6 +220,7 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 				finally:
 					mc.undoInfo( state=undoQueue )
 					Progress.stop()
+					Timer.deleteAll()
 			except npy.Errors.AbortError:
 				self.displayError("Import cancelled by user")
 			except:
