@@ -405,7 +405,7 @@ class MayaScene:
 			Timer.push("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
 			
-			mayaAgent.loadSim()
+			mayaAgent.loadSim(self.sceneDesc.animType)
 			
 			# Presumably every agent will be simmed over the same frame
 			# range - however since the frame ranges could conceivably

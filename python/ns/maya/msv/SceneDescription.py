@@ -45,6 +45,9 @@ import ns.maya.msv.Selection as Selection
 
 class eSkinType:
 	smooth, duplicate, instance = range(3)
+	
+class eAnimType:
+	curves, loader = range(2)
 
 class MsvOpt:
 	kLoadSkeleton = "loadSkeleton"
@@ -67,6 +70,7 @@ class MsvOpt:
 	kDeleteSkeleton = "deleteSkeleton"
 	kCacheDir = "cacheDir"
 	kRange = "range"
+	kAnimType = "animType"
 
 class SceneDescription:
 	def __init__(self, options):
@@ -173,6 +177,11 @@ class SceneDescription:
 			self.range = options[MsvOpt.kRange]
 		except:
 			self.range = ""
+			
+		try:
+			animTypeString = options[MsvOpt.kAnimType]
+		except:
+			animTypeString = "curves"
 	
 		self.skinType = eSkinType.smooth
 		if "smooth" == skinTypeString:
@@ -181,6 +190,12 @@ class SceneDescription:
 			self.skinType = eSkinType.instance
 		elif "duplicate" == skinTypeString:
 			self.skinType = eSkinType.duplicate
+
+		self.animType = eAnimType.curves
+		if "curves" == animTypeString:
+			self.animType = eAnimType.curves
+		elif "loader" == animTypeString:
+			self.animType = eAnimType.loader
 		
 		self._terrainFile = ""
 		
@@ -381,7 +396,7 @@ class SceneDescription:
 		# Load the sim data if a sim dir was given.
 		#
 		simDir = self.simDir()
-		if simDir:
+		if simDir and (eAnimType.curves == self.animType):
 			sim = Sim.Sim(self._selectionGroup)
 			SimReader.read( simDir, self.simType, sim, simProgress )
 			for agentSim in sim.agents():

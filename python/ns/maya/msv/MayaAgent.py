@@ -796,45 +796,13 @@ class MayaAgent:
 		if self._zeroPose:
 			mc.dagPose( self._zeroPose, restore=True )
 			
-	def loadSim( self ):
-		if True:
-			simDir = self.mayaScene.sceneDesc.simDir()
-			simType = self.mayaScene.sceneDesc.simType.strip('.')
-			agentType = self._msvAgent.agentDesc.agentType
-			instance = self._msvAgent.id
-			
-			simLoader = mc.createNode("msvSimLoader", name="msvSimLoader%d" % instance)
-			mc.setAttr( "%s.simDir" % simLoader, simDir, type="string" )
-			mc.setAttr( "%s.fileType" % simLoader, simType, type="string" )
-			mc.setAttr( "%s.agentType" % simLoader, agentType, type="string" )
-			mc.setAttr( "%s.instance" % simLoader, instance )
-			mc.connectAttr( "time1.outTime", "%s.time" % simLoader )
-			
-			i = 0
-			for mayaJoint in self.joints.values():
-				msvJoint = mayaJoint.msvJoint()
-				mc.setAttr( "%s.joints[%d]" % (simLoader, i), msvJoint.name, type="string" )
-				
-				j = 0
-				numTranslateChannels = 0
-				# Determine degrees of freedom and use them to figure out
-				# which tokens correspond to which channels
-				#
-				for channel in msvJoint.order:
-					if not msvJoint.dof[channel]:
-						continue
- 						
-					if AgentDescription.isRotateEnum( channel ):
-						src = "%s.output[%d].rotate[%d]" % (simLoader, i, (j-numTranslateChannels))
-					else:
-						src = "%s.output[%d].translate[%d]" % (simLoader, i, j)
-						numTranslateChannels += 1
-					dst = "%s.%s" % (mayaJoint.name, AgentDescription.enum2Channel[channel])
-					mc.connectAttr( src, dst )
-					j += 1
-				
-				i += 1
-		else:
+	def loadSim( self, animType ):
+		'''Load the simulation data for this MayaAgent. It will either be
+		   loaded as anim curves or through the msvSimLoader node.'''
+		if SceneDescription.eAnimType.curves == animType:
+			#==================================================================
+			# Create Anim Curves
+			#==================================================================
 			sim = self.sim()
 	
 			for jointSim in sim.joints():
@@ -857,6 +825,47 @@ class MayaAgent:
 		 				
 		 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
 		 				Timer.pop()
+		else:
+			#==================================================================
+			# Create msvSimLoader Nodes
+			#==================================================================
+			simDir = self.mayaScene.sceneDesc.simDir()
+			simType = self.mayaScene.sceneDesc.simType.strip('.')
+			agentType = self._msvAgent.agentDesc.agentType
+			instance = self._msvAgent.id
+			
+			simLoader = mc.createNode("msvSimLoader", name="msvSimLoader%d" % instance)
+			mc.setAttr( "%s.simDir" % simLoader, simDir, type="string" )
+			mc.setAttr( "%s.fileType" % simLoader, simType, type="string" )
+			mc.setAttr( "%s.agentType" % simLoader, agentType, type="string" )
+			mc.setAttr( "%s.instance" % simLoader, instance )
+			mc.connectAttr( "time1.outTime", "%s.time" % simLoader )
+			
+			i = 0
+			for mayaJoint in self.joints.values():
+				msvJoint = mayaJoint.msvJoint()
+				mc.setAttr( "%s.joints[%d]" % (simLoader, i), msvJoint.name, type="string" )
+				
+				j = 0
+				numTranslateChannels = 0
+				# Use the joint's degrees-of-freedom and channel order to
+				# determine which channels are present and which
+				# transformations they correspond to
+				for channel in msvJoint.order:
+					if not msvJoint.dof[channel]:
+						continue
+ 						
+					if AgentDescription.isRotateEnum( channel ):
+						src = "%s.output[%d].rotate[%d]" % (simLoader, i, (j-numTranslateChannels))
+					else:
+						src = "%s.output[%d].translate[%d]" % (simLoader, i, j)
+						numTranslateChannels += 1
+					dst = "%s.%s" % (mayaJoint.name, AgentDescription.enum2Channel[channel])
+					mc.connectAttr( src, dst )
+					j += 1
+				
+				i += 1
+			
 
 	def deleteSkeleton( self ):
 		intermediateShapes = []

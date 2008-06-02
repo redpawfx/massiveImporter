@@ -40,6 +40,9 @@ proc loadOptionVars()
 	string $skinType = `optionVar -q msvImporterSkinTypeOption`;
 	optionMenuGrp -e -value $skinType msvImporterSkinTypeMenu;
 
+	string $animType = `optionVar -q msvImporterAnimTypeOption`;
+	optionMenuGrp -e -value $animType msvImporterAnimTypeMenu;
+
 	int $loadMaterials = `optionVar -q msvImporterLoadMaterialsOption`;
 	checkBoxGrp -e -value2 $loadMaterials msvImporterLoadOptions;
 
@@ -103,6 +106,10 @@ proc resetOptionVars(int $forceFactorySettings)
 		optionVar -stringValue msvImporterSkinTypeOption "smooth";
 	}
 	
+	if ($forceFactorySettings || !`optionVar -exists msvImporterAnimTypeOption`) {
+		optionVar -stringValue msvImporterAnimTypeOption "curves";
+	}
+	
 	if ($forceFactorySettings || !`optionVar -exists msvImporterLoadSegmentsOption`) {
 		optionVar -intValue msvImporterLoadSegmentsOption true;
 	}
@@ -161,6 +168,9 @@ global proc msvImporterCallback( string $parent )
 
 	string $skinType = `optionMenuGrp -q -value msvImporterSkinTypeMenu`;
 	optionVar -stringValue msvImporterSkinTypeOption $skinType;
+
+	string $animType = `optionMenuGrp -q -value msvImporterAnimTypeMenu`;
+	optionVar -stringValue msvImporterAnimTypeOption $animType;
 
 	int $loadMaterials = `checkBoxGrp -q -value2 msvImporterLoadOptions`;
 	optionVar -intValue msvImporterLoadMaterialsOption $loadMaterials;
@@ -354,6 +364,13 @@ proc msvImporterOptions()
 		 	menuItem -label "chunk";
 
 		 	optionMenuGrp
+				-label "Anim type:"
+				-adjustableColumn 2
+				msvImporterAnimTypeMenu;
+		 	menuItem -label "curves";
+		 	menuItem -label "loader";
+
+		 	optionMenuGrp
 				-label "Load materials as:"
 				-adjustableColumn 2
 				msvImporterMaterialTypeMenu;
@@ -385,7 +402,12 @@ proc msvImporterOptions()
 	 		-attachForm		msvImporterSkinTypeMenu		"right"		5
 			-attachNone		msvImporterSkinTypeMenu		"bottom"
 
-			-attachControl	msvImporterMaterialTypeMenu	"top"		5 msvImporterSkinTypeMenu
+			-attachControl	msvImporterAnimTypeMenu		"top"		5 msvImporterSkinTypeMenu
+	 		-attachForm		msvImporterAnimTypeMenu		"left"		5
+	 		-attachForm		msvImporterAnimTypeMenu		"right"		5
+			-attachNone		msvImporterAnimTypeMenu		"bottom"
+
+			-attachControl	msvImporterMaterialTypeMenu	"top"		5 msvImporterAnimTypeMenu
 	 		-attachForm		msvImporterMaterialTypeMenu	"left"		5
 	 		-attachForm		msvImporterMaterialTypeMenu	"right"		5
 			-attachNone		msvImporterMaterialTypeMenu	"bottom"
@@ -627,6 +649,9 @@ proc string assembleCmd()
 		$skinType = "duplicate";
 	}
 	$cmd += (" -skinType \"" + $skinType + "\"");
+
+	string $animType = `optionVar -q msvImporterAnimTypeOption`;
+	$cmd += (" -animType \"" + $animType + "\"");
 
 	string $materialType = `optionVar -q msvImporterMaterialTypeOption`;
 	$materialType = `tolower $materialType`;

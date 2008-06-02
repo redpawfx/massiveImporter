@@ -72,6 +72,8 @@ kCacheDirFlag = "-cd"
 kCacheDirFlagLong = "-cacheDir"
 kRangeFlag = "-r"
 kRangeFlagLong = "-range"
+kAnimTypeFlag = "-at"
+kAnimTypeFlagLong = "-animType"
 	
 class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 	def __init__(self):
@@ -97,6 +99,7 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 		self._options[MsvOpt.kSkinType] = "smooth"
 		self._options[MsvOpt.kCacheGeometry] = False
 		self._options[MsvOpt.kDeleteSkeleton] = False
+		self._options[MsvOpt.kAnimType] = "curves"
 				
 		if argData.isFlagSet( kSimDirFlag ):
 			self._options[MsvOpt.kSimDir] = argData.flagArgumentString( kSimDirFlag, 0 )
@@ -138,6 +141,8 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 			self._options[MsvOpt.kCacheDir] = argData.flagArgumentString( kCacheDirFlag, 0 )
 		if argData.isFlagSet( kRangeFlag ):
 			self._options[MsvOpt.kRange] = argData.flagArgumentString( kRangeFlag, 0 )
+		if argData.isFlagSet( kAnimTypeFlag ):
+			self._options[MsvOpt.kAnimType] = argData.flagArgumentString( kAnimTypeFlag, 0 )
 			
 		if not MsvOpt.kMasFile in self._options:
 			raise npy.Errors.BadArgumentError( "The -masFile/-mas flag is required" )
@@ -248,7 +253,8 @@ def syntaxCreator():
 	syntax.addFlag( kDeleteSkeletonFlag, kDeleteSkeletonFlagLong, OpenMaya.MSyntax.kBoolean )
 	syntax.addFlag( kCacheDirFlag, kCacheDirFlagLong, OpenMaya.MSyntax.kString )
 	syntax.addFlag( kRangeFlag, kRangeFlagLong, OpenMaya.MSyntax.kString )
-		
+	syntax.addFlag( kAnimTypeFlag, kAnimTypeFlagLong, OpenMaya.MSyntax.kString )
+	
 	syntax.makeFlagMultiUse( kSelectionFlag )
 	
 	syntax.makeFlagQueryWithFullArgs( kMasFileFlag, False )
