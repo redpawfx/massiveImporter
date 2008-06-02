@@ -23,61 +23,7 @@
 import sys
 import os.path
 
-	
-class Selection:
-	def __init__(self):
-		self._ids = set()
-
-	def __repr__(self):
-		return `self._ids`
-	
-	def addRanges( self, ranges ):
-		for r in ranges:
-			try:
-				ids = [ int(r) ]
-			except:
-				tokens = r.split("-")
-				if len(tokens) != 2:
-					print >> sys.stderr, "Selection range '%s' not understood. Ignoring." % r
-					continue
-				try:
-					start = int(tokens[0])
-					end = int(tokens[1])+1
-				except:
-					print >> sys.stderr, "Selection range '%s' not understood. Ignoring." % r
-					continue					
-				ids = range( start, end )
-			self._ids.update(ids)
-	
-	def contains( self, id ):
-		return id in self._ids
-			
-class SelectionGroup:
-	def __init__(self):
-		self._selections = {}
-	
-	def __repr__(self):
-		s = ""
-		for (name, selection) in self._selections.items():
-			s += "%s: %s\n" % (name, `selection`)
-		return s
-
-	def addSelection(self, name, selection):
-		self._selections[name] = selection
-		
-	def selection( self, name ):
-		return self._selections[name]
-	
-	def selectionNames( self ):
-		return self._selections.keys()
-	
-	def contains( self, id ):
-		if not self._selections:
-			return True
-		for selection in self._selections.values():
-			if selection.contains( id ):
-				return True
-		return False
+import ns.maya.msv.Selection as Selection
 
 class CdlFile:
 	def __init__(self, file, type=""):
@@ -90,7 +36,7 @@ class MasDescription:
 		self.masFile = ""
 		self.cdlFiles = []
 		self.terrainFile = ""
-		self.selectionGroup = SelectionGroup()
+		self.selectionGroup = Selection.SelectionGroup()
 		self.numAgents = 0
 
 def _handleTerrain( fileHandle, tokens, mas ):
@@ -150,7 +96,7 @@ def _handlePlace( fileHandle, tokens, mas ):
 				if len(tokens) != 2:
 					continue
 				name = tokens[1]
-				selection = Selection()
+				selection = Selection.Selection()
 				line = fileHandle.next().strip()
 				while line != "end selection":
 					tokens = line.split()

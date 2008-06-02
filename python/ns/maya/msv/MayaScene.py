@@ -234,7 +234,7 @@ class MayaScene:
 			self.importGeometry( mayaGeometry, groupName )
 
  	def buildPrimitive( self, mayaPrimitive ):
- 		key = "%s_%s" % (mayaPrimitive.mayaJoint.agent.agentType(), mayaPrimitive.mayaJoint.msvName() )
+ 		key = "%s_%s" % (mayaPrimitive.mayaJoint.agent.agentType(), mayaPrimitive.mayaJoint.msvJoint().name )
  		master = ""
  		try:
  			master = self.primitiveCache[key]
@@ -412,7 +412,7 @@ class MayaScene:
 			# be different, find and and store the earliest startFrame
 			# and latest endFrame
 			#
-			if mayaAgent.sim:
+			if mayaAgent.sim():
 				if -sys.maxint == startFrame or mayaAgent.sim().startFrame() < startFrame:
 					startFrame = mayaAgent.sim().startFrame()
 				if -sys.maxint == endFrame or mayaAgent.sim().endFrame() > endFrame:

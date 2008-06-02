@@ -74,6 +74,9 @@ class Agent:
 	def endFrame(self):
 		return self._endFrame
 	
+	def joint(self, jointName):
+		return self._joints[jointName]
+	
 	def addSample(self, jointName, frame, data):
 		if -sys.maxint == self._startFrame or frame < self._startFrame:
 				self._startFrame = frame
@@ -115,6 +118,9 @@ class Joint:
 	def numFrames(self):
 		return self._numFrames
 	
+	def numChannels(self):
+		return self._numChannels
+	
 	def channelNames(self):
 		return self._order.keys()
 	
@@ -134,6 +140,14 @@ class Joint:
 		sample = 0.0
 		try:
 			channel = self._channels[self._order[channelName]]
+			sample = channel[self._index(frame)]
+		finally:
+			return sample
+		
+	def sampleByIndex(self, index, frame):
+		sample = 0.0
+		try:
+			channel = self._channels[index]
 			sample = channel[self._index(frame)]
 		finally:
 			return sample

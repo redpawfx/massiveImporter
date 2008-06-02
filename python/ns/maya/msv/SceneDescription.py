@@ -41,6 +41,7 @@ import ns.maya.msv.Agent as Agent
 import ns.maya.msv.AgentDescription as AgentDescription
 import ns.maya.Progress as Progress
 import ns.maya.msv.Sim as Sim
+import ns.maya.msv.Selection as Selection
 
 class eSkinType:
 	smooth, duplicate, instance = range(3)
@@ -188,10 +189,10 @@ class SceneDescription:
 		self.perInstanceVariables = {}
 		self.sims = {}
 		
-		self._selectionGroup = MasReader.SelectionGroup()
+		self._selectionGroup = Selection.SelectionGroup()
 		if self.range:
 			tokens = self.range.split()
-			sel = MasReader.Selection()
+			sel = Selection.Selection()
 			sel.addRanges( tokens )
 			self._selectionGroup.addSelection( "NimbleMsv", sel )
 
@@ -211,6 +212,12 @@ class SceneDescription:
 		'''Path to the terrain file.'''
 		if self._terrainFile:
 			return self.resolvePath( self._terrainFile )
+		else:
+			return ""
+		
+	def simDir(self):
+		if self._simDir:
+			return self.resolvePath( self._simDir )
 		else:
 			return ""
 		
@@ -373,10 +380,10 @@ class SceneDescription:
 		
 		# Load the sim data if a sim dir was given.
 		#
-		if self._simDir:
-			resolvedSimDir = self.resolvePath(self._simDir)
+		simDir = self.simDir()
+		if simDir:
 			sim = Sim.Sim(self._selectionGroup)
-			SimReader.read( resolvedSimDir, self.simType, sim, simProgress )
+			SimReader.read( simDir, self.simType, sim, simProgress )
 			for agentSim in sim.agents():
 				agent = self.agentByName( agentSim.name() )
 				agent.setSim( agentSim )

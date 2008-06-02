@@ -309,7 +309,7 @@ class MayaPrimitive:
 	def __init__(self, msvPrimitive, mayaJoint):
 		self._msvPrimitive = msvPrimitive
 		self.mayaJoint = mayaJoint
-		self.baseName = (mayaJoint.msvName() + "Segment")
+		self.baseName = (mayaJoint.msvJoint().name + "Segment")
 		self.name = ""
 		
 	def create( cls, msvPrimitive, mayaJoint ):
@@ -387,11 +387,8 @@ class MayaJoint:
  		self.name = ""
  		self.channelOffsets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
- 	def msvName( self ):
- 		return self._msvJoint.name
- 	
- 	def msvPrimitive( self ):
- 		return self._msvJoint.primitive
+ 	def msvJoint( self ):
+ 		return self._msvJoint
  	
  	def primitiveName( self ):
  		if self.primitive:
@@ -800,28 +797,66 @@ class MayaAgent:
 			mc.dagPose( self._zeroPose, restore=True )
 			
 	def loadSim( self ):
-		sim = self._msvAgent.sim()
-
-		for jointSim in sim.joints():
-	 		mayaJoint = self.joint( jointSim.name() )
-
-	 		for channelName in jointSim.channelNames():
-	 			channelEnum = AgentDescription.channel2Enum[channelName]
-	 			if mayaJoint.isChannelFree( channelEnum ):
-					Timer.push("Setting Keyframe")
-					times = range( jointSim.startFrame(),
-								   jointSim.startFrame() + jointSim.numFrames(),
-								   self.sceneDesc().frameStep )
-	  				mc.setKeyframe( mayaJoint.name, attribute=channelName,
-									inTangentType="linear", outTangentType="linear",
-									time=times, value=0.0 )
-	 				[ animCurve ] = mc.listConnections( "%s.%s" % (mayaJoint.name, channelName), source=True )
-	 				
-	 				offset = mayaJoint.channelOffsets[channelEnum]
-	 				channels = [ offset + jointSim.sample(channelName, i) for i in times ]
-	 				
-	 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
-	 				Timer.pop()
+		if True:
+			simDir = self.mayaScene.sceneDesc.simDir()
+			simType = self.mayaScene.sceneDesc.simType.strip('.')
+			agentType = self._msvAgent.agentDesc.agentType
+			instance = self._msvAgent.id
+			
+			simLoader = mc.createNode("msvSimLoader", name="msvSimLoader%d" % instance)
+			mc.setAttr( "%s.simDir" % simLoader, simDir, type="string" )
+			mc.setAttr( "%s.fileType" % simLoader, simType, type="string" )
+			mc.setAttr( "%s.agentType" % simLoader, agentType, type="string" )
+			mc.setAttr( "%s.instance" % simLoader, instance )
+			mc.connectAttr( "time1.outTime", "%s.time" % simLoader )
+			
+			i = 0
+			for mayaJoint in self.joints.values():
+				msvJoint = mayaJoint.msvJoint()
+				mc.setAttr( "%s.joints[%d]" % (simLoader, i), msvJoint.name, type="string" )
+				
+				j = 0
+				numTranslateChannels = 0
+				# Determine degrees of freedom and use them to figure out
+				# which tokens correspond to which channels
+				#
+				for channel in msvJoint.order:
+					if not msvJoint.dof[channel]:
+						continue
+ 						
+					if AgentDescription.isRotateEnum( channel ):
+						src = "%s.output[%d].rotate[%d]" % (simLoader, i, (j-numTranslateChannels))
+					else:
+						src = "%s.output[%d].translate[%d]" % (simLoader, i, j)
+						numTranslateChannels += 1
+					dst = "%s.%s" % (mayaJoint.name, AgentDescription.enum2Channel[channel])
+					mc.connectAttr( src, dst )
+					j += 1
+				
+				i += 1
+		else:
+			sim = self.sim()
+	
+			for jointSim in sim.joints():
+		 		mayaJoint = self.joint( jointSim.name() )
+	
+		 		for channelName in jointSim.channelNames():
+		 			channelEnum = AgentDescription.channel2Enum[channelName]
+		 			if mayaJoint.isChannelFree( channelEnum ):
+						Timer.push("Setting Keyframe")
+						times = range( jointSim.startFrame(),
+									   jointSim.startFrame() + jointSim.numFrames(),
+									   self.sceneDesc().frameStep )
+		  				mc.setKeyframe( mayaJoint.name, attribute=channelName,
+										inTangentType="linear", outTangentType="linear",
+										time=times, value=0.0 )
+		 				[ animCurve ] = mc.listConnections( "%s.%s" % (mayaJoint.name, channelName), source=True )
+		 				
+		 				offset = mayaJoint.channelOffsets[channelEnum]
+		 				channels = [ offset + jointSim.sample(channelName, i) for i in times ]
+		 				
+		 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
+		 				Timer.pop()
 
 	def deleteSkeleton( self ):
 		intermediateShapes = []
