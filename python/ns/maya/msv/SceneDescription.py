@@ -42,6 +42,7 @@ import ns.maya.msv.AgentDescription as AgentDescription
 import ns.maya.Progress as Progress
 import ns.maya.msv.Sim as Sim
 import ns.maya.msv.Selection as Selection
+from ns.maya.msv.MsvSimLoader import *
 
 class eSkinType:
 	smooth, duplicate, instance = range(3)
@@ -396,12 +397,15 @@ class SceneDescription:
 		# Load the sim data if a sim dir was given.
 		#
 		simDir = self.simDir()
-		if simDir and (eAnimType.curves == self.animType):
+		if simDir:
 			sim = Sim.Sim(self._selectionGroup)
 			SimReader.read( simDir, self.simType, sim, simProgress )
-			for agentSim in sim.agents():
-				agent = self.agentByName( agentSim.name() )
-				agent.setSim( agentSim )
+			if (eAnimType.curves == self.animType):
+				for agentSim in sim.agents():
+					agent = self.agentByName( agentSim.name() )
+					agent.setSim( agentSim )
+			else:
+				MsvSimLoader.sims[simDir] = sim
 
 
 				

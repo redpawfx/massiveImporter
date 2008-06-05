@@ -10,8 +10,7 @@ import ns.py as npy
 import ns.py.Errors
 
 import ns.maya.msv.Sim as Sim
-import ns.maya.msv.APFReader as APFReader
-import ns.maya.msv.AMCReader as AMCReader
+import ns.maya.msv.SimReader as SimReader
 import ns.maya.msv.Selection as Selection
 import ns.maya.msv.AgentDescription as AgentDescription
 
@@ -26,12 +25,14 @@ class MsvSimLoader(MPxNode):
 	aSimDir = MObject()
 	aAgentType = MObject()
 	aInstance = MObject()
-	aFileType = MObject()
+	aSimType = MObject()
 	aJoints = MObject()
 	
 	aOutput = MObject()
 	aTranslate = MObject()
 	aRotate = MObject()
+	
+	sims = {}
 	
 	def __init__(self):
 		MPxNode.__init__(self)
@@ -58,23 +59,16 @@ class MsvSimLoader(MPxNode):
 	
 				frame = int(dataBlock.inputValue( MsvSimLoader.aTime ).asTime().value())
 
-				fileType = self._asString( dataBlock.inputValue( MsvSimLoader.aFileType ) )
+				simType = self._asString( dataBlock.inputValue( MsvSimLoader.aSimType ) )
+				simType = ".%s" % simType
 				
-				fileName = ""
-				sel = Selection.SelectionGroup()
-				sel.addAnonymousSelection( [ instance ] )
-				sim = Sim.Sim(sel)
-				simFile = None
-				if "apf" == fileType:
-					fileName = "%s/frame.%d.apf" % (simDir, frame)
-					simFile = APFReader.APFReader(fileName)
-				elif "amc" == fileType:
-					fileName = "%s/%s.%d.amc" % (simDir, agentType, instance)
-					simFile = AMCReader.AMCReader(fileName)
-				else:
-					raise npy.Errors.BadArgumentError("%s is an unsupported sim filetype." % fileType)
-			
-				simFile.read(sim)
+				try:
+					sim = MsvSimLoader.sims[simDir]
+				except:
+					print >> sys.stderr, "READING"
+					sim = Sim.Sim()
+					SimReader.read( simDir, simType, sim )
+					MsvSimLoader.sims[simDir] = sim
 				
 				agentName = AgentDescription.formatAgentName( agentType, instance )
 				agentSim = sim.agent(agentName)
@@ -159,10 +153,10 @@ def nodeInitializer():
 	fAttr.setReadable(True)
 	fAttr.setStorable(True)
 	
-	# fileType
+	# simType
 	fString = MFnStringData()
 	fAttr = MFnTypedAttribute()
-	MsvSimLoader.aFileType = fAttr.create( "fileType", "ft", MFnData.kString, fString.create("apf") )
+	MsvSimLoader.aSimType = fAttr.create( "simType", "st", MFnData.kString, fString.create("apf") )
 	fAttr.setKeyable(True)
 	fAttr.setWritable(True)
 	fAttr.setReadable(True)
@@ -211,7 +205,7 @@ def nodeInitializer():
 	MsvSimLoader.addAttribute( MsvSimLoader.aSimDir )
 	MsvSimLoader.addAttribute( MsvSimLoader.aAgentType )
 	MsvSimLoader.addAttribute( MsvSimLoader.aInstance )
-	MsvSimLoader.addAttribute( MsvSimLoader.aFileType )
+	MsvSimLoader.addAttribute( MsvSimLoader.aSimType )
 	MsvSimLoader.addAttribute( MsvSimLoader.aJoints )
 	MsvSimLoader.addAttribute( MsvSimLoader.aOutput )
 
@@ -219,20 +213,20 @@ def nodeInitializer():
 	MsvSimLoader.attributeAffects( MsvSimLoader.aSimDir, MsvSimLoader.aOutput )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aAgentType, MsvSimLoader.aOutput )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aInstance, MsvSimLoader.aOutput )
-	MsvSimLoader.attributeAffects( MsvSimLoader.aFileType, MsvSimLoader.aOutput )
+	MsvSimLoader.attributeAffects( MsvSimLoader.aSimType, MsvSimLoader.aOutput )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aJoints, MsvSimLoader.aOutput )
 
 	MsvSimLoader.attributeAffects( MsvSimLoader.aTime, MsvSimLoader.aTranslate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aSimDir, MsvSimLoader.aTranslate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aAgentType, MsvSimLoader.aTranslate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aInstance, MsvSimLoader.aTranslate )
-	MsvSimLoader.attributeAffects( MsvSimLoader.aFileType, MsvSimLoader.aTranslate )
+	MsvSimLoader.attributeAffects( MsvSimLoader.aSimType, MsvSimLoader.aTranslate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aJoints, MsvSimLoader.aTranslate )
 
 	MsvSimLoader.attributeAffects( MsvSimLoader.aTime, MsvSimLoader.aRotate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aSimDir, MsvSimLoader.aRotate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aAgentType, MsvSimLoader.aRotate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aInstance, MsvSimLoader.aRotate )
-	MsvSimLoader.attributeAffects( MsvSimLoader.aFileType, MsvSimLoader.aRotate )
+	MsvSimLoader.attributeAffects( MsvSimLoader.aSimType, MsvSimLoader.aRotate )
 	MsvSimLoader.attributeAffects( MsvSimLoader.aJoints, MsvSimLoader.aRotate )
 	

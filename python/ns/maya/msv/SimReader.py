@@ -58,7 +58,7 @@ def _readAMCSim( simFiles, sim, progressRange ):
 		Timer.pop()
 		Progress.advanceProgress( progressIncrement )
 
-def read(dirPath, simType, sim, progressRange):
+def read(dirPath, simType, sim, progressRange=0):
 	'''Load sim files from a sim directory'''
 	
 	try:

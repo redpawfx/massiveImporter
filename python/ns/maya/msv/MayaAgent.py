@@ -836,7 +836,7 @@ class MayaAgent:
 			
 			simLoader = mc.createNode("msvSimLoader", name="msvSimLoader%d" % instance)
 			mc.setAttr( "%s.simDir" % simLoader, simDir, type="string" )
-			mc.setAttr( "%s.fileType" % simLoader, simType, type="string" )
+			mc.setAttr( "%s.simType" % simLoader, simType, type="string" )
 			mc.setAttr( "%s.agentType" % simLoader, agentType, type="string" )
 			mc.setAttr( "%s.instance" % simLoader, instance )
 			mc.connectAttr( "time1.outTime", "%s.time" % simLoader )
