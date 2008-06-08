@@ -413,10 +413,10 @@ class MayaScene:
 			# and latest endFrame
 			#
 			if mayaAgent.sim():
-				if -sys.maxint == startFrame or mayaAgent.sim().startFrame() < startFrame:
-					startFrame = mayaAgent.sim().startFrame()
-				if -sys.maxint == endFrame or mayaAgent.sim().endFrame() > endFrame:
-					endFrame = mayaAgent.sim().endFrame()
+				if -sys.maxint == startFrame or mayaAgent.sim().startFrame < startFrame:
+					startFrame = mayaAgent.sim().startFrame
+				if -sys.maxint == endFrame or mayaAgent.sim().endFrame > endFrame:
+					endFrame = mayaAgent.sim().endFrame
 			
 			Progress.advanceProgress( simIncrement )
 			Timer.pop()

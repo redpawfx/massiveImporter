@@ -20,44 +20,54 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
+import os.path
 import sys
 import maya.OpenMayaMPx as OpenMayaMPx
 
-from ns.py import RollbackImporter
-
-# Any modules imported after the RollbackImporter is instantiated
-# will be unloaded when the plugin is unloaded. This guarantees
-# that when the plug-in is reloaded, all modules will be reloaded
-# as well. This helps during development as it is not
-# necessary to restart maya for python changes to take effect.
-#
-# Passing in "OpenMaya" tells the RollbackImporter to ignore the
-# OpenMaya* modules.
-#
-importer = RollbackImporter.RollbackImporter("OpenMaya")
-
-import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
-import ns.maya.msv.MsvMeshRegulator as MsvMeshRegulator
-import ns.maya.msv.MsvSimLoader as MsvSimLoader
+importer = None
 
 # initialize the script plug-in
 def initializePlugin(oPlugin):
 	fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
+	
+	# Find the python source and add it to the pythonpath. This
+	# assumes that this file (MsvTools.py) lives in the 'plug-ins'
+	# directory which is a sibling of the 'python' directory containing
+	# the python source. This should be the case if the plug-in was
+	# installed following the directions in the included INSTALL.txt
+	# file.
+	#
+	installPath = "%s/.." % fPlugin.loadPath()
+	pyPath = "%s/python" % installPath
+	nsPath = "%s/ns" % pyPath
+	if not os.path.isdir(pyPath) or not os.path.isdir(nsPath):
+		sys.stderr.write( "Error loading plugin: MsvTools python source was not found in %s\n" % pyPath )
+		raise
+	sys.path.append( pyPath )
+	
+	from ns.py import RollbackImporter
+	
+	# Any modules imported after the RollbackImporter is instantiated
+	# will be unloaded when the plugin is unloaded. This guarantees
+	# that when the plug-in is reloaded, all modules will be reloaded
+	# as well. This helps during development as it is not
+	# necessary to restart maya for python changes to take effect.
+	#
+	# Passing in "OpenMaya" tells the RollbackImporter to ignore the
+	# OpenMaya* modules.
+	#
+	importer = RollbackImporter.RollbackImporter("OpenMaya")
+	
+	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
+	import ns.maya.msv.MsvSimLoader as MsvSimLoader
+	
 	try:
 		fPlugin.registerCommand( MsvImporterCmd.kName,
 								 MsvImporterCmd.creator,
 								 MsvImporterCmd.syntaxCreator )
 	except:
 		sys.stderr.write( "Failed to register command: %s" % MsvImporterCmd.kName )
-		raise
-	
-	try:
-		fPlugin.registerNode( MsvMeshRegulator.kName,
-							  MsvMeshRegulator.kId,
-							  MsvMeshRegulator.nodeCreator,
-							  MsvMeshRegulator.nodeInitializer )
-	except:
-		sys.stderr.write( "Failed to register node: %s" % MsvMeshRegulator.kName )
 		raise
 	
 	try:
@@ -74,16 +84,14 @@ def initializePlugin(oPlugin):
 # uninitialize the script plug-in
 def uninitializePlugin(oPlugin):
 	fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
+	
+	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
+	import ns.maya.msv.MsvSimLoader as MsvSimLoader
+
 	try:
 		fPlugin.deregisterCommand( MsvImporterCmd.kName )
 	except:
 		sys.stderr.write( "Failed to deregister command: %s" % MsvImporterCmd.kName )
-		raise
-	   
-	try:
-		fPlugin.deregisterNode( MsvMeshRegulator.kId )
-	except:
-		sys.stderr.write( "Failed to deregister node: %s" % MsvMeshRegulator.kName )
 		raise
 	
 	try:
@@ -95,5 +103,6 @@ def uninitializePlugin(oPlugin):
 	# Unload all modules.
 	#
 	global importer
-	importer.uninstall()
+	if importer:
+		importer.uninstall()
 	

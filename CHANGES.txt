@@ -1,3 +1,38 @@
+0.4
+===
+o Name changes:
+  plugin is now called MsvTools.py (was: NimbleMsv.py)
+  importer window is now launched through msvImporterWin (was nsImportMsvWin)
+  importer command is now called msvImporter (was nsImportMsv)
+o New install process uses the Maya module system and doesn't require setting
+  your PYTHONPATH. Hopefully it's easier than the old way.
+o There is now a command line tool "MsvTranslator.py" which allows you to load
+  a Massive scene in "chunks" of a few hundred at a time. Each chunk is loaded
+  in batch mode and then saved out as a Maya file. At the end all of the saved
+  files are imported into one file and that is in turn saved out.
+  This process can help work around some Maya memory leaks (memory which is
+  never released even by doing a "File > New"). While the entire process will
+  take longer than importing the agents all at once it can allow for a much
+  larger final scene.
+o Add a new way of loading simulation data. The new "loader" anim type will
+  use a custom msvSimLoader node to drive the skeleton animation. The
+  msvSimLoader loads animation directly from disk and does not create anim
+  curves.
+  Advantages: shorter the initial load time and reduced memory usage.
+  Disadvantages: no anim curves means you can't edit the loaded animation.
+o Geometry caching now creates one cache per frame instead of one cache per
+  agent. Previously, with one cache per agent, Maya would run out of file
+  descriptors once the number of agents in the scene got too large.
+o Add a "RollbackImporter" (adapted from
+  http://pyunit.sourceforge.net/notes/reloading.html) to allow the plugin
+  to be unloaded and reloaded. Probably only useful for development.
+o Bug: Geometry caching would sometimes fail because the cacheFile command
+  would write out a partial dag path to disk instead of a full dag path.
+  Fix: query what was actually written out to disk before making the
+  attachFile call.
+o Print a warning instead of a "divide by zero" exception if the wrong sim type
+  is specified.
+
 0.3
 ===
 o Option to cache smooth skinned agents using Maya's geometry cache. This can

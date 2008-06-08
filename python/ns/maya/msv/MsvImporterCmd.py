@@ -75,7 +75,7 @@ kRangeFlagLong = "-range"
 kAnimTypeFlag = "-at"
 kAnimTypeFlagLong = "-animType"
 	
-class MsvImportCmd( OpenMayaMPx.MPxCommand ):
+class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
 	def __init__(self):
 		OpenMayaMPx.MPxCommand.__init__(self)
 		self._reset()
@@ -213,8 +213,8 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 					Progress.setProgress( readProgress + buildProgress )
 					Timer.pop()
 						
-					for timer in sorted(Timer.names()):
-						print "%s: %f" % (timer, Timer.elapsed(timer))
+					#for timer in sorted(Timer.names()):
+					#	print "%s: %f" % (timer, Timer.elapsed(timer))
 					
 					Progress.setTitle("Garbage Collecting")
 					del sceneDesc
@@ -233,7 +233,7 @@ class MsvImportCmd( OpenMayaMPx.MPxCommand ):
 
 		
 def creator():
-	return OpenMayaMPx.asMPxPtr( MsvImportCmd() )
+	return OpenMayaMPx.asMPxPtr( MsvImporterCmd() )
 
 def syntaxCreator():
 	syntax = OpenMaya.MSyntax()

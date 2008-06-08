@@ -406,6 +406,13 @@ class SceneDescription:
 					agent.setSim( agentSim )
 			else:
 				MsvSimLoader.sims[simDir] = sim
+				for agentSim in sim.agents():
+					agent = self.agentByName( agentSim.name() )
+					# Record the start and end frames in case we're building
+					# a geometry cache.
+					#
+					agent.sim().startFrame = agentSim.startFrame
+					agent.sim().endFrame = agentSim.endFrame
 
 
 				

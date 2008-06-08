@@ -59,8 +59,8 @@ class Agent:
 	def __init__(self, name):
 		self._name = name
 		self._joints = {}
-		self._startFrame = -sys.maxint
-		self._endFrame = -sys.maxint
+		self.startFrame = -sys.maxint
+		self.endFrame = -sys.maxint
 	
 	def name(self):
 		return self._name
@@ -68,20 +68,14 @@ class Agent:
 	def joints(self):
 		return self._joints.values()
 	
-	def startFrame(self):
-		return self._startFrame
-	
-	def endFrame(self):
-		return self._endFrame
-	
 	def joint(self, jointName):
 		return self._joints[jointName]
 	
 	def addSample(self, jointName, frame, data):
-		if -sys.maxint == self._startFrame or frame < self._startFrame:
-				self._startFrame = frame
-		if -sys.maxint == self._endFrame or frame > self._endFrame:
-				self._endFrame = frame
+		if -sys.maxint == self.startFrame or frame < self.startFrame:
+				self.startFrame = frame
+		if -sys.maxint == self.endFrame or frame > self.endFrame:
+				self.endFrame = frame
 			
 		j = None
 		try:

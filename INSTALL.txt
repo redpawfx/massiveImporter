@@ -1,27 +1,42 @@
-Installation Instructions for NimbleMsv: A Massive Importer for Maya
+Installation Instructions for MsvTools: A Massive Importer for Maya
 
 Note: Currently this plug-in is only supported for Maya 8.5 and up
 
-You ready? It's a bit hairy...
+www.NimbleStudiosInc.com
+james@nimblestudiosinc.com
+piechota@gmail.com
 
-1. The Massive Importer package should contain:
-   NimbleMsv.py
-   ns/
-   nsImportMsvWin.mel
+1. Extract MsvTools040.zip or MsvTools040.tgz to the directory of your choice
 
-2. NimbleMsv.py is the Maya plug-in, move it into your Maya plug-in path
+2. Open MsvTools.txt in a text editor and change PATH_TO_INSTALL_DIRECTORY
+   to point the NimbleTools directory.
 
-   Linux Example:
-   mv NimbleMsv.py ~/maya/8.5/plug-ins
+   Ex (Windows):
+   If C:/MyExtraPlugins/MsvTools contains the extracted icons/, plug-ins/,
+   and scripts/ directories, edit MsvTools.txt to look like:
 
-3. ns/ is a directory structure containing the byte-compiled python scripts
-   used by NimbleMsv.py, move it into your PYTHONPATH
++ MsvTools 0.4 C:/MyExtraPlugins/MsvTools
 
-   Linux Example: (assuming your PYTHONPATH contains the directory /my/python/path/)
-   mv ns /my/python/path/
+   Ex (Linux):
+   If /opt/MsvTools contains the extracted icons/, plug-ins/, and scripts/
+   directories, edit MsvTools.txt to look like:
 
-4. nsImportMsvWin.mel is the Maya UI for the importer, move it into your
-   Maya script path
++ MsvTools 0.4 /opt/MsvTools
 
-   Linux Example:
-   mv nsImportMsvWin.mel ~/maya/8.5/scripts
+3. Copy MsvTools.txt into the 'modules' directory found either in your
+   your local Maya preferences directory or in the Maya installation directory.
+
+   On Windows, for Maya 2008, this is by default: 
+   C:\Documents and Settings\<username>\My Documents\maya\2008\modules
+   or
+   C:\Program Files\Autodesk\Maya2008\modules
+
+   On Linux, for Maya 2008, this is by default: 
+   ~<username>/maya/2008/modules/
+   or
+   /usr/autodesk/maya2008/modules/
+   
+   If the modules directory does not exist, create it.
+   
+4. Launch Maya and load the "MsvTools.py" plugin from the Plug-in Manager.
+
