@@ -57,6 +57,7 @@ def initializePlugin(oPlugin):
 	# Passing in "OpenMaya" tells the RollbackImporter to ignore the
 	# OpenMaya* modules.
 	#
+	global importer
 	importer = RollbackImporter.RollbackImporter("OpenMaya")
 	
 	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd

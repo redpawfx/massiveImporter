@@ -855,12 +855,18 @@ class MayaAgent:
 					if not msvJoint.dof[channel]:
 						continue
  						
+ 					src = ""
+ 					offset = ""
 					if AgentDescription.isRotateEnum( channel ):
 						src = "%s.output[%d].rotate[%d]" % (simLoader, i, (j-numTranslateChannels))
+						offset = "%s.offsets[%d].rotateOffset[%d]" % (simLoader, i, (j-numTranslateChannels))
 					else:
 						src = "%s.output[%d].translate[%d]" % (simLoader, i, j)
+						offset = "%s.offsets[%d].translateOffset[%d]" % (simLoader, i, j)
 						numTranslateChannels += 1
 					dst = "%s.%s" % (mayaJoint.name, AgentDescription.enum2Channel[channel])
+
+					mc.setAttr( offset, mayaJoint.channelOffsets[channel] )
 					mc.connectAttr( src, dst )
 					j += 1
 				
