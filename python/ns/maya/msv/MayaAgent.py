@@ -41,7 +41,9 @@ _masterSegments = {}
 
 def getDescendentShapes( name ):
 	descendents = mc.listRelatives( name, allDescendents=True, fullPath=True )
-	shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
+	shapes = []
+	if descendents:
+		shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
 	return shapes
 
 def setMultiAttr( multiAttr, values, childAttr="" ):
