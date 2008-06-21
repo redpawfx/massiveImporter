@@ -2,14 +2,21 @@ import sys
 import os
 import os.path
 
-import maya.standalone
-import maya.cmds as mc
-import maya.mel
+try:
+	import maya.standalone
+	import maya.cmds as mc
+	import maya.mel
+except:
+	print >> sys.stderr, "Please use the 'mayapy' executable included in your installation of Maya to run MsvTranslator.py"
+	exit(1)
 
-import ns.py.Timer as Timer
-
-import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
-import ns.maya.msv.MasReader as MasReader
+try:
+	import ns.py.Timer as Timer
+	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
+	import ns.maya.msv.MasReader as MasReader
+except:
+	print >> sys.stderr, "Please set your PYTHONPATH to include the MsvTools 'python' directory"
+	exit(1)
 
 kOutputDirFlag = "-out"
 kOutputDirFlagLong = "-outputDir"
@@ -83,6 +90,9 @@ def main():
 	if groupSize < 1:
 		groupSize = mas.numAgents
 	
+	finalLog = "%s/%s.log" % (args['outputDir'], basename)
+	tempLog = "%s/%s.temp.log" % (args['outputDir'], basename)
+	
 	for group in range(1, mas.numAgents+1, groupSize ):
 		currentFile = ""
 		rangeStr = ""
@@ -95,8 +105,6 @@ def main():
 		else:
 			currentFile = "%s/%s.%s" % (args['outputDir'], basename, fileSuffix)
 
-
-
 		# Ideally we could do this as a standalone script using
 		# maya.standalone. However, for some reason, when nsImportMsv
 		# is run as part of a standalone script it doesn't work right.
@@ -108,19 +116,39 @@ def main():
 		# maya.standalone is, perhaps, intended for use with the python
 		# API bindings (although this is pure speculation).
 		#
-		mel = 'loadPlugin \\"MsvTools.py\\";'
+		
+		mel = 'cmdFileOutput -o \\"%s\\";' % tempLog
+		mel += ' loadPlugin \\"MsvTools.py\\";'
 		mel += ' msvImporter%s%s;' % (rangeStr, flags)
-		mel += ' file -rename \\"%s\\"; file -f -uc 0 -type \\"%s\\" -save;' % (currentFile, args['outputType'])
+		mel += ' file -rename \\"%s\\";' % currentFile
+		mel += ' file -f -uc 0 -type \\"%s\\" -save;' % args['outputType']
+		mel += ' cmdFileOutput -closeAll;'
 	
 		batchCmd = 'maya -batch -command "%s"' % mel
 		print >> sys.stderr, batchCmd
 		os.system(batchCmd)
 		
+		tempLogFile = open( tempLog, "r" )
+		finalLogFile = open( finalLog, "a" )
+		finalLogFile.writelines( tempLogFile.readlines() )
+		finalLogFile.close()
+		tempLogFile.close()
+		
 	if groupSize < mas.numAgents:
-		combiner = 'msvCombiner( \\"%s\\", \\"%s\\", \\"%s\\", %d, %d )' % (args['outputDir'], basename, args['outputType'], groupSize, mas.numAgents)
-		batchCmd = 'maya -batch -command "%s"' % combiner
+		mel = 'cmdFileOutput -o \\"%s\\";' % tempLog
+		mel += ' msvCombiner( \\"%s\\", \\"%s\\", \\"%s\\", %d, %d );' % (args['outputDir'], basename, args['outputType'], groupSize, mas.numAgents)
+		mel += ' cmdFileOutput -closeAll;'
+		batchCmd = 'maya -batch -command "%s"' % mel
 		print >> sys.stderr, batchCmd
 		os.system(batchCmd)
+		
+		tempLogFile = open( tempLog, "r" )
+		finalLogFile = open( finalLog, "a" )
+		finalLogFile.writelines( tempLogFile.readlines() )
+		finalLogFile.close()
+		tempLogFile.close()
+		
+	os.remove( tempLog )
 		
 	Timer.pop()
 		
@@ -130,6 +158,8 @@ def main():
 	print >> sys.stderr, "### %s" % args['masFile']
 	print >> sys.stderr, "### converted to"
 	print >> sys.stderr, "### %s/%s.%s" % (args['outputDir'], basename, fileSuffix)
+	print >> sys.stderr, "###"
+	print >> sys.stderr, "### See %s for a log of results." % finalLog
 	print >> sys.stderr, "######################################################################"
 	print >> sys.stderr, ""
 	

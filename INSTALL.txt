@@ -6,22 +6,22 @@ www.NimbleStudiosInc.com
 james@nimblestudiosinc.com
 piechota@gmail.com
 
-1. Extract MsvTools040.zip or MsvTools040.tgz to the directory of your choice
+1. Extract MsvTools042.zip or MsvTools042.tgz to the directory of your choice
 
 2. Open MsvTools.txt in a text editor and change PATH_TO_INSTALL_DIRECTORY
-   to point the NimbleTools directory.
+   to point to the MsvTools directory.
 
    Ex (Windows):
    If C:/MyExtraPlugins/MsvTools contains the extracted icons/, plug-ins/,
-   and scripts/ directories, edit MsvTools.txt to look like:
+   scripts/, and python/ directories, edit MsvTools.txt to look like:
 
-+ MsvTools 0.4 C:/MyExtraPlugins/MsvTools
++ MsvTools 0.4.2 C:/MyExtraPlugins/MsvTools
 
    Ex (Linux):
-   If /opt/MsvTools contains the extracted icons/, plug-ins/, and scripts/
-   directories, edit MsvTools.txt to look like:
+   If /opt/MsvTools contains the extracted icons/, plug-ins/, scripts/,
+   and python/ directories, edit MsvTools.txt to look like:
 
-+ MsvTools 0.4 /opt/MsvTools
++ MsvTools 0.4.2 /opt/MsvTools
 
 3. Copy MsvTools.txt into the 'modules' directory found either in your
    your local Maya preferences directory or in the Maya installation directory.
@@ -38,5 +38,32 @@ piechota@gmail.com
    
    If the modules directory does not exist, create it.
    
-4. Launch Maya and load the "MsvTools.py" plugin from the Plug-in Manager.
+4. In order to use the MsvTranslator.py standalone python script you'll have to
+   set your PYTHONPATH environment variable to include the 'python' directory.
+   Since the MsvTranslator.py python script is not launched from Maya setting
+   the PYTHONPATH in your Maya.env file will not work - it must be set through
+   the normal process for your operating system.
+   
+   Ex (Windows):
+   If C:/MyExtraPlugins/MsvTools contains the extracted python/ directory, add
+   C:/MyExtraPlugins/MsvTools/python
+   to your PYTHONPATH. On Windows the PYTHONPATH can be set by:
+   1. RMB on My Computer
+   2. Go to Properties > Advanced
+   3. Click "Environment Variables"
+   4. Click "New"
+   5. Enter "PYTHONPATH" for the Variable name
+   6. Enter the path to the 'python' directory for the Variable value
+   7. Click OK
+   8. Click OK
+   9. Click OK
+   
+   Ex (Linux):
+   
+   If /opt/MsvTools contains the extracted python/ directory
+   directories add:
+   /opt/MsvTools/python
+   to your PYTHONPATH environment variable.
+
+5. Launch Maya and load the "MsvTools.py" plugin from the Plug-in Manager.
 
