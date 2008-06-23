@@ -23,21 +23,7 @@
 import sys
 import os.path
 
-import ns.maya.msv.Selection as Selection
-
-class CdlFile:
-	def __init__(self, file, type=""):
-		self.file = file
-		self.type = type
-
-class MasDescription:
-	def __init__(self):
-		self.path = ""
-		self.masFile = ""
-		self.cdlFiles = []
-		self.terrainFile = ""
-		self.selectionGroup = Selection.SelectionGroup()
-		self.numAgents = 0
+import ns.maya.msv.MasDescription as MasDescription
 
 def _handleTerrain( fileHandle, tokens, mas ):
 	'''Load terrain information. For now only the terrain OBJ file is loaded'''
@@ -87,11 +73,19 @@ def _handlePlace( fileHandle, tokens, mas ):
 				# otherwise I gotta start looking at whitespace to figure
 				# out when the group statement is done
 				#
-				agentType = tokens[2]
+				id = int(tokens[1])
+				name = tokens[2]
 				for i in range(3):
 					tokens = fileHandle.next().strip().split()
-					if tokens[0] == "cdl":
-						mas.cdlFiles.append( CdlFile( tokens[1], agentType ) )
+					if tokens[0] == "cdl" and len(tokens) > 1:
+						mas.cdlFiles.append( MasDescription.CdlFile( tokens[1], name ) )
+				# Create a group and add it to the groups array indexed
+				# by its 'id'
+				#
+				group = MasDescription.Group( id, name )
+				if id >= len(mas.groups):
+					mas.groups.extend([ None ] * (id - len(mas.groups) + 1))
+				mas.groups[id] = group
 			elif tokens[0] == "selection":
 				if len(tokens) != 2:
 					continue
@@ -114,19 +108,24 @@ def _handlePlace( fileHandle, tokens, mas ):
 					if tokens[0] == "number":
 						mas.numAgents += int(tokens[1])
 					line = fileHandle.next().strip()
+			elif tokens[0] == "lock":
+				# lock id [p0.x p0.y p0.z] [p.x p.y p.z] [n.x n.y n.z] [r.x r.y r.z] h d flow terrain
+				#
+				# For now we only care about the associated group id and
+				# position
+				group = int(tokens[1])
+				position = [ float(tokens[2]), float(tokens[3]), float(tokens[4]) ]
+				mas.locators.append(MasDescription.Locator(group, position))
 			else:
 				# skip the other tags for now
 				pass
 	return []
 
-def read(fullName):
+def read(fileHandle):
 	'''Load information about the Massive setup'''
  
-	mas = MasDescription()
-	(mas.path, mas.masFile) = os.path.split(fullName)
+	mas = MasDescription.MasDescription()
 
-	fileHandle = open(fullName, "r")
- 	
  	try:
 		for line in fileHandle:
 			tokens = line.strip().split()
@@ -138,11 +137,9 @@ def read(fullName):
 	 			else:
 	 				pass
 	except:
-	 	fileHandle.close()
 	 	print >> sys.stderr, "Error reading MAS file %s" % fullName
 	 	raise
 	 	
-	fileHandle.close()
  	return mas
  
 

@@ -83,7 +83,7 @@ class SceneDescription:
 			self._masFile = ""
 		
 		try:
-			self._cdlFiles = [ MasReader.CdlFile( file ) for file in options[MsvOpt.kCdlFiles] ]
+			self._cdlFiles = [ MasDescription.CdlFile( file ) for file in options[MsvOpt.kCdlFiles] ]
 		except:
 			self._cdlFiles = []
 		
@@ -352,7 +352,13 @@ class SceneDescription:
 			Progress.setProgressStatus(os.path.basename(resolvedPath))
 			Timer.push("Read MAS")
 			
-			mas = MasReader.read( resolvedPath )
+			fileHandle = open(resolvedPath, "r")
+			try:
+				mas = MasReader.read( fileHandle )
+			finally:
+				fileHandle.close()
+
+			(mas.path, mas.masFile) = os.path.split(resolvedPath)
 			self._terrainFile = mas.terrainFile
 			self._cdlFiles = mas.cdlFiles
 			

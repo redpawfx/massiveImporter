@@ -19,13 +19,16 @@ _pyFiles = [
 		"ns/py/RollbackImporter.py",
 		"ns/py/Timer.py",
 		"ns/maya/Progress.py",
+		"ns/maya/live/MayaServer.py",
 		"ns/maya/msv/Agent.py",
 		"ns/maya/msv/AgentDescription.py",
 		"ns/maya/msv/AMCReader.py",
 		"ns/maya/msv/APFReader.py",
 		"ns/maya/msv/CallsheetReader.py",
 		"ns/maya/msv/CDLReader.py",
+		"ns/maya/msv/MasDescription.py",
 		"ns/maya/msv/MasReader.py",
+		"ns/maya/msv/MasWriter.py",
 		"ns/maya/msv/MayaAgent.py",
 		"ns/maya/msv/MayaScene.py",
 		"ns/maya/msv/MsvImporterCmd.py",
@@ -34,7 +37,8 @@ _pyFiles = [
 		"ns/maya/msv/Selection.py",
 		"ns/maya/msv/Sim.py",
 		"ns/maya/msv/SimReader.py",
-		"ns/maya/msv/WReader.py"
+		"ns/maya/msv/WReader.py",
+		"ns/msv/PushMaya.py"
 		]
 
 _melFiles = [
