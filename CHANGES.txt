@@ -1,3 +1,18 @@
+0.4.2
+=====
+o Error message if PYTHONPATH is not set when MsvTranslator.py is run
+o Error message if mayapy is not used to run MsvTranslator.py
+o Generate a log file when MsvTranslator.py is run
+o Mention PYTHONPATH in Install notes
+
+0.4.1
+=====
+o Chunk skinning works again
+o Fixed the bug where the stadium agent's torso is collaped by adding offsets
+  to the msvSimLoader
+o Support unloading/reloading the plugin resources the python scripts
+  (this was broken in 0.4)
+
 0.4
 ===
 o Name changes:

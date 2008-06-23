@@ -88,6 +88,50 @@ class CDLReader:
 		
 		return tokens
 	
+	def handleCloth(self, fileHandle, tokens):
+		'''Handle one piece of cloth. Since cloth isn't handled yet, treat it
+		   as geometry.'''
+		
+		geometry = AgentDescription.Geometry()
+		if len(tokens) > 1:
+			geometry.name = tokens[1]
+		#collide_ks value  		Specifies collision force.
+		#collisions type 		Specifies type of collisions: terrain, skeleton, geometry. More than one may be specified.
+		#drag value 			Specifies drag.
+		#geo filename 			The .obj file referenced by this cloth node, if any.
+		#grid x-res y-res x y	If cloth object is a grid, specifies x-resolution, y-resolution, x-size and y-size.
+		#id n 					Specifies the node's id number.
+		#kb value 				Specifies bend resistance.
+		#ks value 				Specifies stretch resistance.
+		#material n 			The id of the material node assigned to this cloth node.
+		#rotate x y z 			Rotations applied to this cloth object.
+		#scale x y z 			Scale transformations applied to this cloth object.
+		#steps n 				Specifies number of steps for cloth dynamics.
+		#thickness value 		Specifies cloth thickness.
+		#translate x y z 		Translation applied to this cloth object.
+		#translate x y 			Specifies the location of the current node's icon in the icon work area.		
+
+		tokens = []
+		for line in fileHandle:
+			tokens = line.strip().split()
+			if not line[0].isspace():
+				break
+			if tokens:
+				if tokens[0] == "geo" and len(tokens) > 1:
+					# The geo tag may be empty if this cloth node represents
+					# an empty entry in an option node
+					geometry.file = self.resolvePath( tokens[1] )
+				elif tokens[0] == "id":
+					geometry.id = int(tokens[1])
+				elif tokens[0] == "material":
+					geometry.material = int(tokens[1])
+				else:
+					pass
+		
+		self.agent.geoDB.addGeometry(geometry)
+		
+		return tokens
+	
 	def handleMaterial(self, fileHandle, tokens):
 		'''Handle one material'''
 		
@@ -435,6 +479,8 @@ class CDLReader:
 				tokens = self.handleSegment(fileHandle, tokens)
 			elif tokens[0] == "material":
 				tokens = self.handleMaterial(fileHandle, tokens)
+			elif tokens[0] == "cloth":
+				tokens = self.handleCloth(fileHandle, tokens)
 			elif tokens[0] == "geometry":
 				tokens = self.handleGeometry(fileHandle, tokens)
 			elif tokens[0] == "option":
