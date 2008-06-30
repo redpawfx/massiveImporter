@@ -114,7 +114,7 @@ def _handlePlace( fileHandle, tokens, mas ):
 				# For now we only care about the associated group id and
 				# position
 				group = int(tokens[1])
-				position = [ float(tokens[2]), float(tokens[3]), float(tokens[4]) ]
+				position = ( float(tokens[2].replace("[", "")), float(tokens[3]), float(tokens[4].replace("]", "")) )
 				mas.locators.append(MasDescription.Locator(group, position))
 			else:
 				# skip the other tags for now
@@ -137,7 +137,7 @@ def read(fileHandle):
 	 			else:
 	 				pass
 	except:
-	 	print >> sys.stderr, "Error reading MAS file %s" % fullName
+	 	print >> sys.stderr, "Error reading MAS file"
 	 	raise
 	 	
  	return mas

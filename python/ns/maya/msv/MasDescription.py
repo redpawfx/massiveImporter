@@ -36,9 +36,9 @@ class Group:
 		self.name = name
 		
 class Locator:
-	def __init__(self, group, position):
-		self.group = group
-		self.position = position
+	def __init__(self, groupId, position):
+		self.group = groupId
+		self.position = tuple(position)
 
 class MasDescription:
 	def __init__(self):

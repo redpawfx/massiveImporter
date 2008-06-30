@@ -30,6 +30,7 @@ _pyFiles = [
 		"ns/maya/msv/MasReader.py",
 		"ns/maya/msv/MasWriter.py",
 		"ns/maya/msv/MayaAgent.py",
+		"ns/maya/msv/MayaPlacement.py",
 		"ns/maya/msv/MayaScene.py",
 		"ns/maya/msv/MsvImporterCmd.py",
 		"ns/maya/msv/MsvSimLoader.py",
@@ -38,6 +39,8 @@ _pyFiles = [
 		"ns/maya/msv/Sim.py",
 		"ns/maya/msv/SimReader.py",
 		"ns/maya/msv/WReader.py",
+		"ns/msv/MsvPlacement.py",
+		"ns/msv/PullMaya.py",
 		"ns/msv/PushMaya.py"
 		]
 

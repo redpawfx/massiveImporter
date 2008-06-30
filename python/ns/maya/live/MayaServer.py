@@ -2,6 +2,11 @@ import sys
 import socket
 import threading
 
+import maya.utils
+
+import ns.maya.msv.MayaPlacement as MayaPlacement
+
+
 class MayaServer( threading.Thread ):
 	
 	def __init__(self):
@@ -33,14 +38,9 @@ class Connection( threading.Thread ):
 	def run(self):
 		request = self._file.readline().strip()
 		if request == "PULL":
-			self._file.write("RECEIVED 1!\n")
-			self._file.write("RECEIVED 2!\n")
-			self._file.write("RECEIVED 3!\n")
-			self._file.write("RECEIVED 4!\n")
-			self._file.flush()
+			maya.utils.executeInMainThreadWithResult( MayaPlacement.dump, self._file ) 
 		elif request == "PUSH":
-			for line in self._file.readlines():
-				print >> sys.stderr, "-> %s" % line.strip()
+			maya.utils.executeInMainThreadWithResult( MayaPlacement.build, self._file ) 
 		else:
 			print >> sys.stderr, "%s: INVALID" % request
 		
