@@ -26,8 +26,8 @@ import re
 import os.path
 
 import ns.py.Timer as Timer
-import ns.maya.msv.AgentDescription as AgentDescription
-import ns.maya.msv.Sim as Sim
+import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.Sim as Sim
 
 class Agent:
 	def __init__(self):

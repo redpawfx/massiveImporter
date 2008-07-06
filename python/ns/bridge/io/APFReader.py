@@ -20,65 +20,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-'''Read animation data from an AMC file.'''
+'''Read animation data from an APF file.'''
 
 import sys
 import os.path
 
-import ns.maya.msv.Sim as Sim
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.bridge.data.Sim as Sim
 
-class AMCReader:
+class APFReader:
 	def __init__(self, fullName):
-		self.fullName = fullName
-		# AMC sim files are named: agentType.#.amc where agentType.# is
-		# the name of that particular agent instance
-		#
+		'''Initialize the APF reader by parsing the file name. APF sim files
+		   are named: frame.#.apf where # is the current frame'''
 		tokens = os.path.basename( fullName ).split(".")
-		self.agentName = AgentDescription.formatAgentName( tokens[0], tokens[1] )
+		self.frame = int(tokens[1])
+		self.fullName = fullName
 
 	def read(self, sim):
-		'''Load animation data from an AMC file, Returns a Sim object that
-		   stores some number of frames of animation data for a single agent'''
+		'''Load animation data from an APF file. Adds a single frame's
+		   worth of animation data to each agent'''
 	 
 	 	# Python 2.4 limitation: try... except: finally: doesn't work,
 	 	# have to nest try... except: in try... finally:
 		try:
-			agent = sim.agent( self.agentName )
-			if not agent:
-				# Agent is not in one of the chosen "selections"
-				#
-				return
-			
-			path = os.path.dirname( self.fullName )
-			
 			try:
-				fileHandle = open(self.fullName, "r")
-				frame = 0
-				for line in fileHandle:
-					tokens = line.strip().split()
-					if tokens:
-						if tokens[0][0] == ":":
-							# file options
-							continue
-						elif len(tokens) == 1:
-							# sample number
-							frame = int(tokens[0])
-						else:
-							jointName = tokens[0]
-	 					
+		 		path = os.path.dirname( self.fullName )
+		 		fileHandle = open(self.fullName, "r")
+		 		agent = None
+		 		
+		 		for line in fileHandle:
+		 			tokens = line.strip().split()
+		 			if tokens:
+		 				if tokens[0] == "BEGIN":
+		 					agent = sim.agent( tokens[1] )
+		 					if not agent:
+								# Agent is not in one of the chosen "selections"
+								#
+								continue
+		 				elif agent:
+		 					jointName = tokens[0]
+		 					
 		 					data = []
 		 					for i in range(1, len(tokens)):
 		 						data.append(float(tokens[i]))
 		 					
-		 					agent.addSample( jointName, frame, data ) 
-		 	finally:
-				fileHandle.close()				
-		except:
-			print >> sys.stderr, "Error reading AMC file: %s" % self.fullName	
-			raise
-
-
-
-
-        
+		 					agent.addSample( jointName, self.frame, data ) 
+			except:
+				print >> sys.stderr, "Error reading APF file: %s" % self.fullName	
+				raise
+		finally:
+			fileHandle.close()
+	 	
+	def cmp(a, b):
+		'''Comparison method used to sort APF files in order of increasing
+		   frame number.'''
+		return a.frame - b.frame
+	cmp = staticmethod(cmp)
+	
+	        

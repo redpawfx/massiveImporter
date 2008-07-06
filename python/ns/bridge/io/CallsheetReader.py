@@ -21,42 +21,45 @@
 # THE SOFTWARE.
 
 import sys
-import os.path
 
-import ns.maya.msv.MasDescription as MasDescription
+import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.Agent as Agent
 
-def _writePlace(fileHandle, mas):
-	'''Write a Place block.'''
- 	if not mas.groups and not mas.locators:
- 		# For now we only care about groups and locators
- 		return
- 	
- 	fileHandle.write("Place\n")
- 	
- 	for group in mas.groups:
- 		fileHandle.write("\tgroup %d %s\n" % (group.id, group.name))
- 		# MasReader expeccts every group block to have 3 lines, but, for
- 		# now we don't write any of that info out
- 		fileHandle.write("\t\ttranslate\n")
- 		fileHandle.write("\t\tcolour\n")
- 		fileHandle.write("\t\tcdl\n")
- 		fileHandle.write("\n")
- 	
- 	for locator in mas.locators:
- 		# locked locators store more than just group id and position, but, for
- 		# now that's all we read or write
- 		fileHandle.write("\tlock %d [%f %f %f]\n" % ( locator.group,
-													  locator.position[0],
-													  locator.position[1], 
-													  locator.position[2]))
-
- 	fileHandle.write("End place\n")
-
-def write(fileHandle, mas):
-	'''Write Massive setup information in .mas format.'''
+def read(fullName, sceneDesc):
+	'''Load the simmed values of agent variables'''
  
- 	# For now we just write a subset of the Place block
-	_writePlace(fileHandle, mas)
+	fileHandle = open(fullName, "r")
+ 	
+ 	try:
+ 		try:
+			for line in fileHandle:
+				tokens = line.strip().split()
+		 		if tokens:
+		 			# 0   :	id
+		 			# 1   :	name
+		 			# 2-17:	placement matrix
+		 			# 18  : keyword "cdl"
+		 			# 19  : cdl file path
+		 			# 20-?: variable names and values
+		 			id = int(tokens[0])
+		 			agentName = AgentDescription.formatAgentName(tokens[1])
+		 			agentDesc = sceneDesc.agentDesc( sceneDesc.resolvePath( tokens[19] ) )
+		 					 			
+			 		agent = sceneDesc.buildAgent( agentName, id, agentDesc )
+			 		
+					if not agent:
+						# Agent is not in one of the chosen "selections"
+						#
+						continue
+					 			
+		 			agent.placement = [ float(token) for token in tokens[2:18] ]
+		 			for i in range(20, len(tokens), 2 ):
+		 				agent.variableValues[tokens[i]] = float(tokens[i+1])
+		finally:
+		 	fileHandle.close()
+	except:
+ 		print >> sys.stderr, "Error reading variables file %s" % fullName
+ 		raise
 
 
         

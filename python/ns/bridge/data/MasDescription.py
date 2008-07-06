@@ -21,45 +21,32 @@
 # THE SOFTWARE.
 
 import sys
+import os.path
 
-import ns.maya.msv.AgentDescription as AgentDescription
-import ns.maya.msv.Agent as Agent
+import ns.bridge.data.Selection as Selection
 
-def read(fullName, sceneDesc):
-	'''Load the simmed values of agent variables'''
- 
-	fileHandle = open(fullName, "r")
- 	
- 	try:
- 		try:
-			for line in fileHandle:
-				tokens = line.strip().split()
-		 		if tokens:
-		 			# 0   :	id
-		 			# 1   :	name
-		 			# 2-17:	placement matrix
-		 			# 18  : keyword "cdl"
-		 			# 19  : cdl file path
-		 			# 20-?: variable names and values
-		 			id = int(tokens[0])
-		 			agentName = AgentDescription.formatAgentName(tokens[1])
-		 			agentDesc = sceneDesc.agentDesc( sceneDesc.resolvePath( tokens[19] ) )
-		 					 			
-			 		agent = sceneDesc.buildAgent( agentName, id, agentDesc )
-			 		
-					if not agent:
-						# Agent is not in one of the chosen "selections"
-						#
-						continue
-					 			
-		 			agent.placement = [ float(token) for token in tokens[2:18] ]
-		 			for i in range(20, len(tokens), 2 ):
-		 				agent.variableValues[tokens[i]] = float(tokens[i+1])
-		finally:
-		 	fileHandle.close()
-	except:
- 		print >> sys.stderr, "Error reading variables file %s" % fullName
- 		raise
+class CdlFile:
+	def __init__(self, file, type=""):
+		self.file = file
+		self.type = type
 
+class Group:
+	def __init__(self, id, name):
+		self.id = id
+		self.name = name
+		
+class Locator:
+	def __init__(self, groupId, position):
+		self.group = groupId
+		self.position = tuple(position)
 
-        
+class MasDescription:
+	def __init__(self):
+		self.path = ""
+		self.masFile = ""
+		self.cdlFiles = []
+		self.terrainFile = ""
+		self.groups = []
+		self.locators = []
+		self.selectionGroup = Selection.SelectionGroup()
+		self.numAgents = 0

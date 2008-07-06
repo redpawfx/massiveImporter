@@ -23,7 +23,8 @@
 import sys
 import os.path
 
-import ns.maya.msv.MasDescription as MasDescription
+import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.Selection as Selection
 
 def _handleTerrain( fileHandle, tokens, mas ):
 	'''Load terrain information. For now only the terrain OBJ file is loaded'''

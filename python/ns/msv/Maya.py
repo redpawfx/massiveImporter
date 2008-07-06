@@ -26,9 +26,9 @@ import thread
 
 import massive
 
-import ns.maya.msv.MasDescription as MasDescription
-import ns.maya.msv.MasWriter as MasWriter
-import ns.maya.msv.MasReader as MasReader
+import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.io.MasWriter as MasWriter
+import ns.bridge.io.MasReader as MasReader
 import ns.py.Errors as Errors
 import ns.msv.MsvPlacement as MsvPlacement
 

@@ -23,30 +23,40 @@
 import sys
 import os.path
 
-import ns.maya.msv.Selection as Selection
+import ns.bridge.data.MasDescription as MasDescription
 
-class CdlFile:
-	def __init__(self, file, type=""):
-		self.file = file
-		self.type = type
+def _writePlace(fileHandle, mas):
+	'''Write a Place block.'''
+ 	if not mas.groups and not mas.locators:
+ 		# For now we only care about groups and locators
+ 		return
+ 	
+ 	fileHandle.write("Place\n")
+ 	
+ 	for group in mas.groups:
+ 		fileHandle.write("\tgroup %d %s\n" % (group.id, group.name))
+ 		# MasReader expeccts every group block to have 3 lines, but, for
+ 		# now we don't write any of that info out
+ 		fileHandle.write("\t\ttranslate\n")
+ 		fileHandle.write("\t\tcolour\n")
+ 		fileHandle.write("\t\tcdl\n")
+ 		fileHandle.write("\n")
+ 	
+ 	for locator in mas.locators:
+ 		# locked locators store more than just group id and position, but, for
+ 		# now that's all we read or write
+ 		fileHandle.write("\tlock %d [%f %f %f]\n" % ( locator.group,
+													  locator.position[0],
+													  locator.position[1], 
+													  locator.position[2]))
 
-class Group:
-	def __init__(self, id, name):
-		self.id = id
-		self.name = name
-		
-class Locator:
-	def __init__(self, groupId, position):
-		self.group = groupId
-		self.position = tuple(position)
+ 	fileHandle.write("End place\n")
 
-class MasDescription:
-	def __init__(self):
-		self.path = ""
-		self.masFile = ""
-		self.cdlFiles = []
-		self.terrainFile = ""
-		self.groups = []
-		self.locators = []
-		self.selectionGroup = Selection.SelectionGroup()
-		self.numAgents = 0
+def write(fileHandle, mas):
+	'''Write Massive setup information in .mas format.'''
+ 
+ 	# For now we just write a subset of the Place block
+	_writePlace(fileHandle, mas)
+
+
+        

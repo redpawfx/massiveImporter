@@ -32,9 +32,9 @@ import ns.py.Errors
 import ns.py.Timer as Timer
 
 import ns.maya.msv as nmsv
-import ns.maya.msv.SceneDescription as SceneDescription
-import ns.maya.msv.MasReader as MasReader
-from ns.maya.msv.SceneDescription import MsvOpt
+import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.io.MasReader as MasReader
+from ns.bridge.data.SceneDescription import MsvOpt
 import ns.maya.msv.MayaScene as MayaScene
 import ns.maya.Progress as Progress
 
@@ -170,7 +170,11 @@ class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
 		if argData.isFlagSet( kSelectionFlag ):
 			if argData.isFlagSet( kMasFileFlag ):
 				masFile = argData.flagArgumentString( kMasFileFlag, 0 )
-				mas = MasReader.read( masFile )
+				fileHandle = open(masFile, "r")
+				try:
+					mas = MasReader.read( fileHandle )
+				finally:
+					fileHandle.close()
 				self.setResult( mas.selectionGroup.selectionNames() )
 			else:
 				raise npy.Error.BadArgumentError( "When querying the -selection flag please use the -masFile to indicate which .mas file's selections to query." )

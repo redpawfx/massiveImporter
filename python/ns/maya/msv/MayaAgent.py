@@ -31,9 +31,9 @@ import maya.mel as mel
 
 import ns.py.Timer as Timer
 
-import ns.maya.msv.AgentDescription as AgentDescription
-import ns.maya.msv.SceneDescription as SceneDescription
-import ns.maya.msv.Agent as Agent
+import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.data.Agent as Agent
 
 _animatable = ('rx', 'ry', 'rz', 'tx', 'ty', 'tz')
 _rotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz', 4], ['zyx', 5]])	

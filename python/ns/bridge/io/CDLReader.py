@@ -23,10 +23,10 @@
 import sys
 import os.path
 
-import ns.maya.msv.AMCReader as AMCReader
-import ns.maya.msv.WReader as WReader
-import ns.maya.msv.AgentDescription as AgentDescription
-import ns.maya.msv.Sim as Sim
+import ns.bridge.io.AMCReader as AMCReader
+import ns.bridge.io.WReader as WReader
+import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.Sim as Sim
 
 
 # Node definition

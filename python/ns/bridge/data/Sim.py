@@ -25,7 +25,7 @@ import sys
 import ns
 import ns.py as nsp
 import ns.py.Errors
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.bridge.data.AgentDescription as AgentDescription
 
 class Sim:	
 	def __init__(self, selectionGroup=None):

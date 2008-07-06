@@ -32,9 +32,9 @@ import ns.py.Timer as Timer
 import ns.maya.Progress as Progress
 
 import ns.maya.msv
-import ns.maya.msv.MasDescription as MasDescription
-import ns.maya.msv.MasWriter as MasWriter
-import ns.maya.msv.MasReader as MasReader
+import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.io.MasWriter as MasWriter
+import ns.bridge.io.MasReader as MasReader
 
 def getGroupsSet(create=False):
 	'''The groups set is a set which contains all of the sets representing

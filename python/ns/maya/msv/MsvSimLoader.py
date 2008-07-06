@@ -31,10 +31,10 @@ from maya.OpenMayaMPx import *
 import ns.py as npy
 import ns.py.Errors
 
-import ns.maya.msv.Sim as Sim
-import ns.maya.msv.SimReader as SimReader
-import ns.maya.msv.Selection as Selection
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.bridge.data.Sim as Sim
+import ns.bridge.io.SimReader as SimReader
+import ns.bridge.data.Selection as Selection
+import ns.bridge.data.AgentDescription as AgentDescription
 
 kName = "msvSimLoader"
 

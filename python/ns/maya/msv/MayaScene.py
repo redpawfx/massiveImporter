@@ -33,8 +33,8 @@ import ns.py.Timer as Timer
 import ns.maya.Progress as Progress
 
 import ns.maya.msv as nmsv
-import ns.maya.msv.SceneDescription as SceneDescription
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.data.AgentDescription as AgentDescription
 import ns.maya.msv.MayaAgent as MayaAgent
 
 def dagPathFromName( name ):

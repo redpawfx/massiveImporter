@@ -6,6 +6,7 @@ import maya.utils
 import maya.cmds as mc
 
 import ns.maya.msv.MayaPlacement as MayaPlacement
+import ns.py.Errors as Errors
 
 def threadPrint(msg):
 	print msg
@@ -56,13 +57,18 @@ class Connection( threading.Thread ):
 		
 	def run(self):
 		try:
-			request = self._file.readline().strip()
-			if request == "PULL":
+			request = self._file.readline().split()
+			if request[0] == "PULL":
 				maya.utils.executeInMainThreadWithResult( MayaPlacement.dump, self._file ) 
-			elif request == "PUSH":
-				maya.utils.executeInMainThreadWithResult( MayaPlacement.build, self._file ) 
+			elif request[0] == "PUSH":
+				if len(request) == 1:
+					maya.utils.executeInMainThreadWithResult( MayaPlacement.build, self._file ) 
+				elif request[1] == "sync":
+					maya.utils.executeInMainThreadWithResult( threadPrint, "PUSH sync" ) 
+				else:
+					raise Errors.BadArgumentError("%s: INVALID" % request)
 			else:
-				print >> sys.stderr, "%s: INVALID" % request
+				raise Errors.BadArgumentError("%s: INVALID" % request)
 		finally:
 			# Client's 'readlines' won't pick anythin up until we close the file
 			# and socket

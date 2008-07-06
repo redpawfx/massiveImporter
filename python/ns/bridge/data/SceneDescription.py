@@ -32,16 +32,16 @@ import os.path
 import ns.py.Timer as Timer
 
 import ns.maya.msv as nmsv
-import ns.maya.msv.MasReader as MasReader
-import ns.maya.msv.AMCReader as AMCReader
-import ns.maya.msv.CDLReader as CDLReader
-import ns.maya.msv.SimReader as SimReader
-import ns.maya.msv.CallsheetReader as CallsheetReader
-import ns.maya.msv.Agent as Agent
-import ns.maya.msv.AgentDescription as AgentDescription
+import ns.bridge.io.MasReader as MasReader
+import ns.bridge.io.AMCReader as AMCReader
+import ns.bridge.io.CDLReader as CDLReader
+import ns.bridge.io.SimReader as SimReader
+import ns.bridge.io.CallsheetReader as CallsheetReader
+import ns.bridge.data.Agent as Agent
+import ns.bridge.data.AgentDescription as AgentDescription
 import ns.maya.Progress as Progress
-import ns.maya.msv.Sim as Sim
-import ns.maya.msv.Selection as Selection
+import ns.bridge.data.Sim as Sim
+import ns.bridge.data.Selection as Selection
 from ns.maya.msv.MsvSimLoader import *
 
 class eSkinType:

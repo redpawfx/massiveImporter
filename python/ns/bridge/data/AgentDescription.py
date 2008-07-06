@@ -24,7 +24,7 @@ import sys
 import re
 import os.path
 
-import ns.maya.msv.WReader as WReader
+import ns.bridge.io.WReader as WReader
 
 kTX, kTY, kTZ, kRX, kRY, kRZ = range(6)
 channel2Enum = dict([["tx", kTX], ["ty", kTY], ["tz", kTZ], ["rx", kRX], ["ry", kRY], ["rz", kRZ]])

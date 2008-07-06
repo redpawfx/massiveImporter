@@ -26,8 +26,8 @@ import ns.py
 import ns.py.Errors
 import ns.py.Timer as Timer
 
-import ns.maya.msv.MasDescription as MasDescription
-import ns.maya.msv.MasWriter as MasWriter
+import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.io.MasWriter as MasWriter
 
 import massive
 

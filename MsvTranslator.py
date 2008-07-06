@@ -13,7 +13,7 @@ except:
 try:
 	import ns.py.Timer as Timer
 	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
-	import ns.maya.msv.MasReader as MasReader
+	import ns.bridge.io.MasReader as MasReader
 except:
 	print >> sys.stderr, "Please set your PYTHONPATH to include the MsvTools 'python' directory"
 	exit(1)

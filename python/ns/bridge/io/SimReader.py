@@ -26,8 +26,8 @@ import os.path
 import ns.py.Timer as Timer
 import ns.maya.Progress as Progress
 
-import ns.maya.msv.AMCReader as AMCReader
-import ns.maya.msv.APFReader as APFReader
+import ns.bridge.io.AMCReader as AMCReader
+import ns.bridge.io.APFReader as APFReader
 
 def _readAPFSim( simFiles, sim, progressRange ):
 	# Sort the files first to guarantee that samples are added to the sim
