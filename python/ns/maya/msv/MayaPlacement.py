@@ -37,6 +37,8 @@ import ns.maya.msv.MasWriter as MasWriter
 import ns.maya.msv.MasReader as MasReader
 
 def getGroupsSet(create=False):
+	'''The groups set is a set which contains all of the sets representing
+	   massive groups.'''
 	# "massive_groups" set contains one set per Massive group. Each set
 	# member corresponds to a Massive locator. By default Maya locators
 	# are used.
@@ -167,7 +169,7 @@ def build( fileHandle ):
 			# the number of pre-existing Maya locators, create
 			# a new Maya locator
 			mayaLocator = mc.spaceLocator()
-			addLocators(mayaGroup, [mayaLocator])
+			addLocators(mayaGroup, mayaLocator)
 			created += 1
 		mayaGroupCounts[groupId] += 1
 		# Update the position of the Maya locator
@@ -186,6 +188,8 @@ def dump( fileHandle ):
 
 	# Get a list of all Massive groups
 	groups = mc.sets( groupsSet, query=True )
+	if not groups:
+		groups = []
 	# This MasDescription object will be populated with the Massive
 	# setup data and written to 'fileHandle'
 	mas = MasDescription.MasDescription()
@@ -195,6 +199,8 @@ def dump( fileHandle ):
 		mas.groups.append( MasDescription.Group( groupId, group ) )
 		# Get all the Massive locators in 'group'
 		locators = mc.sets( group, query=True )
+		if not locators:
+			locators = []
 		for locator in locators:
 			# Get the locator world space position
 			position = mc.xform( locator,
