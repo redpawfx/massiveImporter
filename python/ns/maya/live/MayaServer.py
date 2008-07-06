@@ -55,16 +55,17 @@ class Connection( threading.Thread ):
 		self._address = address
 		
 	def run(self):
-		request = self._file.readline().strip()
-		if request == "PULL":
-			maya.utils.executeInMainThreadWithResult( MayaPlacement.dump, self._file ) 
-		elif request == "PUSH":
-			maya.utils.executeInMainThreadWithResult( MayaPlacement.build, self._file ) 
-		else:
-			print >> sys.stderr, "%s: INVALID" % request
-		
-		# Client's 'readlines' won't pick anythin up until we close the file
-		# and socket
-		self._file.close()
-		self._socket.close()
+		try:
+			request = self._file.readline().strip()
+			if request == "PULL":
+				maya.utils.executeInMainThreadWithResult( MayaPlacement.dump, self._file ) 
+			elif request == "PUSH":
+				maya.utils.executeInMainThreadWithResult( MayaPlacement.build, self._file ) 
+			else:
+				print >> sys.stderr, "%s: INVALID" % request
+		finally:
+			# Client's 'readlines' won't pick anythin up until we close the file
+			# and socket
+			self._file.close()
+			self._socket.close()
 		

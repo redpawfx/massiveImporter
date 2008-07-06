@@ -46,7 +46,9 @@ _pyFiles = [
 
 _melFiles = [
 		"scripts/msvCombiner.mel",
-		"scripts/msvImporterWin.mel"
+		"scripts/msvImporterWin.mel",
+		"scripts/msvSceneWin.mel",
+		"scripts/msvSceneUtils.mel",
 		]
 
 _extraFiles = [

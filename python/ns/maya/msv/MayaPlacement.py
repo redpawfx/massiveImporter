@@ -36,22 +36,94 @@ import ns.maya.msv.MasDescription as MasDescription
 import ns.maya.msv.MasWriter as MasWriter
 import ns.maya.msv.MasReader as MasReader
 
+def getGroupsSet(create=False):
+	# "massive_groups" set contains one set per Massive group. Each set
+	# member corresponds to a Massive locator. By default Maya locators
+	# are used.
+	groupsSet = "massive_groups"
+	if not mc.objExists(groupsSet):
+		if create:
+			# The "massive_grups" partition must exist
+			groupsSet = mc.sets(name=groupsSet, empty=True)
+			mc.addAttr(groupsSet, longName="massive", attributeType="long")
+		else:
+			raise Errors.Error("Scene does not contain any Massive groups.")
+	elif "objectSet" != mc.nodeType(groupsSet):
+		# For now we bail if the user has a non-partition node called
+		# "massive_groups"
+		raise Errors.Error("An object named '%s' already exists and is not a set. Please rename it." % groupsSet)
+	
+	return groupsSet;
+
+def isGroupsSet(set):
+	return ("objectSet" == mc.nodeType(set) and
+			"massive_groups" == set)
+
+def createGroup(group, force):
+	if not force and mc.objExists(group):
+		# For now we bail if the user has a non-set node which
+		# has a name class with in incoming massive group
+		if "objectSet" != mc.nodeType(group):
+			raise Errors.Error("Attempting to sync a group called %s from " +
+							   "Massive, but an object by that name " +
+							   "already exists and is not a set. " +
+							   "Please rename it." % group)
+	else:
+		# Create a Maya set to represent the incoming Massive
+		# group.
+		group = mc.sets(empty=True, name=group)
+		mc.addAttr(group, longName="massive", attributeType="long")
+		mc.sets(group, add=getGroupsSet(True))
+		
+def addLocators(group="", locators=[]):
+	if not group and not locators:
+		selection = mc.ls(sl=True)
+		if len(selection) < 2:
+			raise Errors.BadArgumentError("Please select some objects to turn into Massive locators, and a massive group.")
+		group = selection[-1]
+		locators = selection[0:-1]
+		addLocators(group, locators)
+	else:
+		if not group or not locators:
+			raise Errors.BadArgumentError("Please select some objects to turn into Massive locators, and a massive group.")
+		if not isGroup(group):
+			raise Errors.BadArgumentError("%s is not a massive group." % group)
+		if isGroupsSet(group):
+			raise Errors.BadArgumentError("%s can not have locators added to it." % group)
+		for locator in locators:
+			try:
+				mc.xform(locator, query=True, worldSpace=True, translation=True)
+			except:
+				raise Errors.BadArgumentError("%s can not be turned into a Massive locator.\n" +
+											  "Please select items whose transformation is accessible through the 'xform' command." % locator)
+			if not mc.objExists("%s.massive" % locator):
+				mc.addAttr(locator, longName="massive", attributeType="long")
+		mc.sets(locators, add=group)
+		
+def removeLocators(locators=[]):
+	if not locators:
+		selection = mc.ls(sl=True)
+		if not selection:
+			return
+		removeLocators(selection)
+	else:
+		for locator in locators:
+			sets = mc.listSets(object=locator)
+			for set in sets:
+				if isGroup(set):
+					mc.sets(locator, edit=True, rm=set)
+			mc.deleteAttr("%s.massive" % locator)		
+		
+
+def isGroup(group):
+	return ("objectSet" == mc.nodeType(group) and
+			mc.objExists("%s.massive" % group))
+
 def build( fileHandle ):
 	'''Given a text stream in the format of a .mas file, build the described
 	   Massive setup using Maya objects. For now only locators are supported.
 	'''
 	mas = MasReader.read(fileHandle)
-	
-	# "massive" partition contains one set per Massive group. Each set
-	# member corresponds to a Massive locator. By default Maya locators
-	# are used.
-	if not mc.objExists("massive"):
-		# The "massive" partition must exist
-		mc.partition(name="massive")
-	elif "partition" != mc.nodeType("massive"):
-		# For now we bail if the user has a non-partition node called
-		# "massive"
-		raise Errors.Error("An object named 'massive' already exists and is not a partition. Please rename it.")
 	
 	# List of Maya objects representing locators, indexed by the
 	# id of their group. These objects will be updated by incoming
@@ -67,19 +139,7 @@ def build( fileHandle ):
 	# is updated or created.
 	mayaGroupCounts = []
 	for g in mas.groups:
-		if mc.objExists(g.name):
-			# For now we bail if the user has a non-set node which
-			# has a name class with in incoming massive group
-			if "objectSet" != mc.nodeType(g.name):
-				raise Errors.Error("Attempting to sync a group called %s from " +
-								   "Massive, but an object by that name " +
-								   "already exists and is not a set. " +
-								   "Please rename it." % g.name)
-		else:
-			# Create a Maya set to represent the incoming Massive
-			# group.
-			mc.sets(empty=True, name=g.name)
-			mc.partition(g.name, add="massive")
+		createGroup(g.name, force=False)
 		# Initialize mayaGroupLocators with the pre-existing set
 		# members.
 		locators = mc.sets(g.name, query=True)
@@ -107,7 +167,7 @@ def build( fileHandle ):
 			# the number of pre-existing Maya locators, create
 			# a new Maya locator
 			mayaLocator = mc.spaceLocator()
-			mc.sets(mayaLocator, add=mayaGroup)
+			addLocators(mayaGroup, [mayaLocator])
 			created += 1
 		mayaGroupCounts[groupId] += 1
 		# Update the position of the Maya locator
@@ -119,15 +179,13 @@ def dump( fileHandle ):
 	'''Look through the Maya scene and dump to fileHandle, in .mas format,
 	   any Maya objects that represent Massive entitities. For now only
 	   Massive groups and locators are supported.'''
-	if ( not mc.objExists( "massive" ) or
-		 "partition" != mc.nodeType( "massive" ) ):
-		# Massive groups are represented by Maya sets of the same
-		# name stored in the "massive" partition. If no "massive" partition
-		# exists, bail.
-		raise ns.py.Error("Scene does not contain any Massive locators.")
+	# Massive groups are represented by Maya sets of the same
+	# name stored in the "massive_groups" set. If no "massive_groups" set
+	# exists, bail.
+	groupsSet = getGroupsSet(False)
 
 	# Get a list of all Massive groups
-	groups = mc.partition( "massive", query=True )
+	groups = mc.sets( groupsSet, query=True )
 	# This MasDescription object will be populated with the Massive
 	# setup data and written to 'fileHandle'
 	mas = MasDescription.MasDescription()
