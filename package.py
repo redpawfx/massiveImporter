@@ -40,8 +40,7 @@ _pyFiles = [
 		"ns/maya/msv/SimReader.py",
 		"ns/maya/msv/WReader.py",
 		"ns/msv/MsvPlacement.py",
-		"ns/msv/PullMaya.py",
-		"ns/msv/PushMaya.py"
+		"ns/msv/Maya.py"
 		]
 
 _melFiles = [
