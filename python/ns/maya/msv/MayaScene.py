@@ -33,7 +33,7 @@ import ns.py.Timer as Timer
 import ns.maya.Progress as Progress
 
 import ns.maya.msv as nmsv
-import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.data.SimManager as SimManager
 import ns.bridge.data.AgentDescription as AgentDescription
 import ns.maya.msv.MayaAgent as MayaAgent
 
@@ -51,7 +51,7 @@ class MayaScene:
 		self.reset()
 		
 	def reset(self):
-		self.sceneDesc = None
+		self.simManager = None
 		self.geoMasters = {}
 		self.clusterCache = {}
 		self.primitiveCache = {}
@@ -156,7 +156,7 @@ class MayaScene:
  		#mc.connectAttr( "%s.outMesh" % skin.shapeName(), "%s.inMesh" % regulator )
  
 		if ( not msvGeometry.attach and
-			 SceneDescription.eSkinType.smooth != self.sceneDesc.skinType ):
+			 SimManager.eSkinType.smooth != self.simManager.skinType ):
 			self._chunkGeometry( msvGeometry, skin )
 		
 		return skin
@@ -164,7 +164,7 @@ class MayaScene:
 	def _copyGeoMaster( self, skin, groupName, destGeometry ):
 		copy = None
 		if ( not destGeometry.skinnable() or
-		     SceneDescription.eSkinType.smooth == self.sceneDesc.skinType ):
+		     SimManager.eSkinType.smooth == self.simManager.skinType ):
 			# If the destination geometry is attached, has no skin weights,
 			# or has weights and is to be smooth skinned - no chunking
 			# is necessary so do a standard duplicate
@@ -173,7 +173,7 @@ class MayaScene:
 								  returnRootsOnly=True,
 						  		  upstreamNodes=False, inputConnections=False )
 			copy = MayaAgent.MayaSkin( group=group, name=groupName, parent="|" )
-		elif SceneDescription.eSkinType.duplicate == self.sceneDesc.skinType:
+		elif SimManager.eSkinType.duplicate == self.simManager.skinType:
 			# destination geometry is skinnable and the user has chosen
 			# to do a chunk skinning using chunk duplicates. Go through
 			# the cached geometry, which should already be chunked, and
@@ -213,7 +213,7 @@ class MayaScene:
 		'''Build Maya geometry either by importing it from disk, or copying
 		   an already imported geometry "master".'''
 		key = ""
-		if SceneDescription.eSkinType.smooth == self.sceneDesc.skinType:
+		if SimManager.eSkinType.smooth == self.simManager.skinType:
 			# When smooth binding every agent just gets a copy of the
 			# .obj file geometry - so we can key the cache on the file
 			# name and ignore the agent type
@@ -247,7 +247,7 @@ class MayaScene:
 			self.primitiveCache[key] = master
 		
 		instance = ""
-		if self.sceneDesc.instancePrimitives:
+		if self.simManager.instancePrimitives:
 			# Use parent -add -noConnections instead of instance for
 			# performance reasons. Maya is inherently inefficient in creating
 			# instances, often approaching an n^2 runtime for adding a new
@@ -288,7 +288,7 @@ class MayaScene:
 		except:
 			# shadingNode doesn't work right in batch mode, so do it manually
 			#
-			shader = mc.createNode(self.sceneDesc.materialType, name=material.name())
+			shader = mc.createNode(self.simManager.materialType, name=material.name())
 			mc.connectAttr( "%s.msg" % shader, ":defaultShaderList1.s", nextAvailable=True)
 			
 			sg = mc.sets(renderable=True, empty=True, name="%sSG" % shader)
@@ -296,7 +296,7 @@ class MayaScene:
 			MayaAgent.setDouble3Attr( "%s.ambientColor" % shader, material.ambient )
 			mc.setAttr( "%s.diffuse" % shader, material.diffuse )
 			
-			if "blinn" == self.sceneDesc.materialType:
+			if "blinn" == self.simManager.materialType:
 				MayaAgent.setDouble3Attr( "%s.specularColor" % shader, material.specular )
 				mc.setAttr( "%s.specularRollOff" % shader, material.roughness )			
 			
@@ -353,17 +353,17 @@ class MayaScene:
 			self.clusterCache[clusterKey] = cachedCluster
 		mc.setAttr("%s.nw" % cluster, 1)
 	
-	def build(self, sceneDesc, progressRange):
+	def build(self, simManager, progressRange):
 		self.reset()
-		self.sceneDesc = sceneDesc
+		self.simManager = simManager
 		
-		numAgents = self.sceneDesc.numAgents()
+		numAgents = self.simManager.numAgents()
 		
 		# Calculate progress bar increments
 		#
 		terrainIncrement = int(0.1 * progressRange)
 		shadingIncrement = 0
-		if self.sceneDesc.loadPrimitives and self.sceneDesc.instancePrimitives:
+		if self.simManager.loadPrimitives and self.simManager.instancePrimitives:
 			shadingIncrement = int(0.1 * progressRange)
 		agentIncrement = 0
 		simIncrement = 0
@@ -372,10 +372,10 @@ class MayaScene:
 		if numAgents:
 			leftover = progressRange - terrainIncrement - shadingIncrement
 			
-			if self.sceneDesc.cacheGeometry:
+			if self.simManager.cacheGeometry:
 				cacheIncrement = int(0.35 * leftover)
 				leftover -= cacheIncrement
-			if self.sceneDesc.deleteSkeleton:
+			if self.simManager.deleteSkeleton:
 				deleteIncrement = int(0.05 * leftover) 
 				leftover -= deleteIncrement
 			
@@ -384,14 +384,14 @@ class MayaScene:
 		#
 		# End of progress bar increment calculation
 		
-		if self.sceneDesc.terrainFile():
-			self.importObj( self.sceneDesc.terrainFile(), "terrain" )
+		if self.simManager.terrainFile():
+			self.importObj( self.simManager.terrainFile(), "terrain" )
 			
 		mayaAgents = []
 		startFrame = -sys.maxint
 		endFrame = -sys.maxint
 		
-		for msvAgent in self.sceneDesc.agents():
+		for msvAgent in self.simManager.agents():
 			mayaAgent = MayaAgent.MayaAgent( msvAgent )
 			
 			Timer.push("Build Agent")
@@ -405,7 +405,7 @@ class MayaScene:
 			Timer.push("Sim Agent")
 			Progress.setProgressStatus( "%s: Loading sim..." % mayaAgent.name() )
 			
-			mayaAgent.loadSim(self.sceneDesc.animType)
+			mayaAgent.loadSim(self.simManager.animType)
 			
 			# Presumably every agent will be simmed over the same frame
 			# range - however since the frame ranges could conceivably
@@ -424,7 +424,7 @@ class MayaScene:
 			mayaAgent.setupDisplayLayers()
 			mayaAgents.append( mayaAgent )
 
-		if self.sceneDesc.cacheGeometry:
+		if self.simManager.cacheGeometry:
 			# Create geometry caches for each agent.
 			#
 			Timer.push("Caching Agents")
@@ -433,9 +433,9 @@ class MayaScene:
 			meshes = []
 			for mayaAgent in mayaAgents:
 				meshes.extend( [ geometry.shapeName() for geometry in mayaAgent.geometryData ] )
-			cacheFileName = "%s_%s" % (sceneDesc.baseName(), sceneDesc.range)
+			cacheFileName = "%s_%s" % (simManager.baseName(), simManager.range)
 			
-			mc.cacheFile( directory=self.sceneDesc.cacheDir,
+			mc.cacheFile( directory=self.simManager.cacheDir,
 						  singleCache=True,
 						  doubleToFloat=True,
 						  format="OneFilePerFrame",
@@ -450,14 +450,14 @@ class MayaScene:
 			# partial path into the cache instead of the full path. To makes
 			# sure the attachFile works, we have to query the actual channel
 			# names
-			cacheFileFullName = "%s/%s.xml" % (self.sceneDesc.cacheDir, cacheFileName)
+			cacheFileFullName = "%s/%s.xml" % (self.simManager.cacheDir, cacheFileName)
 			meshes = mc.cacheFile( query=True, fileName=cacheFileFullName, channelName=True )
 			
 			switches = [ maya.mel.eval( 'createHistorySwitch( "%s", false )' % mesh ) for mesh in meshes ]
 			switchAttrs = [ ( "%s.inp[0]" % switch ) for switch in switches ]
 			mc.cacheFile( attachFile=True,
 						  fileName=cacheFileName,
-						  directory=self.sceneDesc.cacheDir,
+						  directory=self.simManager.cacheDir,
 						  channelName=meshes,
 						  inAttr=switchAttrs )
 			for switch in switches:
@@ -465,7 +465,7 @@ class MayaScene:
 			Progress.advanceProgress( cacheIncrement )
 			Timer.pop()
 	
-			if self.sceneDesc.deleteSkeleton:
+			if self.simManager.deleteSkeleton:
 				# After creating a geometry cache the skeleton, anim curves, and
 				# skin clusters are no longer needed to playback the sim. To save
 				# memory the user can choose to delete them.
@@ -477,8 +477,8 @@ class MayaScene:
 				Progress.advanceProgress( deleteIncrement )
 				Timer.pop()
 
-		if self.sceneDesc.loadPrimitives:
-			if self.sceneDesc.instancePrimitives:
+		if self.simManager.loadPrimitives:
+			if self.simManager.instancePrimitives:
 				# Add the shading assignments that were postponed by the use
 				# of the -noConnections flag when creating the instances
 				#

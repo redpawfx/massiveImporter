@@ -32,7 +32,7 @@ import maya.mel as mel
 import ns.py.Timer as Timer
 
 import ns.bridge.data.AgentDescription as AgentDescription
-import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.data.SimManager as SimManager
 import ns.bridge.data.Agent as Agent
 
 _animatable = ('rx', 'ry', 'rz', 'tx', 'ty', 'tz')
@@ -124,7 +124,7 @@ class MayaMaterial:
 		elif self._msvMaterial.name:
 			return self._msvMaterial.name
 		else:
-			return "%s%d" % (self._agent.sceneDesc().materialType, self.id())
+			return "%s%d" % (self._agent.simManager().materialType, self.id())
 		
 	def build(self):
 		self.colorMap = self._agent.replaceEmbeddedVariables( self.colorMap )
@@ -265,9 +265,9 @@ class MayaGeometry:
 				[name] = mc.parent( self.name(), self.agent.joint(self.msvGeometry.attach).name )
 				[name] = mc.ls( name, long=True )
 				self.setName( name )
-			if self.agent.sceneDesc().loadMaterials:
+			if self.agent.simManager().loadMaterials:
 				mc.sets( self.name(), edit=True, forceElement=self.agent.material(self.msvGeometry.material).sgName )
-			elif SceneDescription.eSkinType.instance == self.agent.sceneDesc().skinType:
+			elif SimManager.eSkinType.instance == self.agent.simManager().skinType:
 				# When using chunk skinning with instances the newly
 				# instanced chunks won't have any shading connections,
 				# assign some now
@@ -549,8 +549,8 @@ class MayaAgent:
 	def name( self ):
 		return self._msvAgent.name
 
-	def sceneDesc( self ):
-		return self.mayaScene.sceneDesc
+	def simManager( self ):
+		return self.mayaScene.simManager
 	
 	def agentDesc( self ):
 		return self._msvAgent.agentDesc
@@ -605,7 +605,7 @@ class MayaAgent:
 		# should stay under the master group.
 		#
 		if not geometry.attached() and \
-		   SceneDescription.eSkinType.instance != self.sceneDesc().skinType:
+		   SimManager.eSkinType.instance != self.simManager().skinType:
 			[name] = mc.parent(geometry.name(), self.getAgentGroup(), relative=True)
  			[name] = mc.ls(name, long=True)
  			geometry.setName(name)
@@ -752,7 +752,7 @@ class MayaAgent:
 				print >> sys.stderr, "Warning: %s has no skin weights and will not be bound." % geometry.name()
 				continue
 			
-			if SceneDescription.eSkinType.smooth == self.sceneDesc().skinType:
+			if SimManager.eSkinType.smooth == self.simManager().skinType:
 				self._createSkinCluster( geometry )
 			elif geometry.skin.bindChunks(self):
 				mc.delete(geometry.name())		
@@ -760,10 +760,10 @@ class MayaAgent:
 	def build( self, mayaScene ):
 		self.mayaScene = mayaScene
 
-		if self.sceneDesc().loadSkeleton:
+		if self.simManager().loadSkeleton:
 			self.buildSkeleton()
 		
-		if self.sceneDesc().loadGeometry:
+		if self.simManager().loadGeometry:
 			Timer.push("Build Geometry")
 			self.buildGeometry()
 			Timer.pop()
@@ -774,24 +774,24 @@ class MayaAgent:
 		#
 		self.freezeAgentScale()
 		
-		if self.sceneDesc().loadPrimitives:
+		if self.simManager().loadPrimitives:
 			Timer.push("Build Primitives")
 			self.buildPrimitives()
 			Timer.pop()
 					
-		if self.sceneDesc().loadSkin:
+		if self.simManager().loadSkin:
 			Timer.push("Bind Skin")
 			
 			self.setBindPose()
 			self.bindSkin()
 			Timer.pop()
 		
-		if self.sceneDesc().loadSkeleton:
+		if self.simManager().loadSkeleton:
 			# Has to happen after skin is bound
 			self.scaleJoints()
 			self._zeroPose = mc.dagPose(self.rootJoint.name, save=True, name=(self.name() + "Zero"))
 			
-		if self.sceneDesc().loadActions:
+		if self.simManager().loadActions:
 			self.buildCharacterSet()
 			self.applyActions()
 		
@@ -801,7 +801,7 @@ class MayaAgent:
 	def loadSim( self, animType ):
 		'''Load the simulation data for this MayaAgent. It will either be
 		   loaded as anim curves or through the msvSimLoader node.'''
-		if SceneDescription.eAnimType.curves == animType:
+		if SimManager.eAnimType.curves == animType:
 			#==================================================================
 			# Create Anim Curves
 			#==================================================================
@@ -816,7 +816,7 @@ class MayaAgent:
 						Timer.push("Setting Keyframe")
 						times = range( jointSim.startFrame(),
 									   jointSim.startFrame() + jointSim.numFrames(),
-									   self.sceneDesc().frameStep )
+									   self.simManager().frameStep )
 		  				mc.setKeyframe( mayaJoint.name, attribute=channelName,
 										inTangentType="linear", outTangentType="linear",
 										time=times, value=0.0 )
@@ -831,8 +831,8 @@ class MayaAgent:
 			#==================================================================
 			# Create msvSimLoader Nodes
 			#==================================================================
-			simDir = self.mayaScene.sceneDesc.simDir()
-			simType = self.mayaScene.sceneDesc.simType.strip('.')
+			simDir = self.mayaScene.simManager.simDir()
+			simType = self.mayaScene.simManager.simType.strip('.')
 			agentType = self._msvAgent.agentDesc.agentType
 			instance = self._msvAgent.id
 			

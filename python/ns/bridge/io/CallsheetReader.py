@@ -25,7 +25,7 @@ import sys
 import ns.bridge.data.AgentDescription as AgentDescription
 import ns.bridge.data.Agent as Agent
 
-def read(fullName, sceneDesc):
+def read(fullName, simManager):
 	'''Load the simmed values of agent variables'''
  
 	fileHandle = open(fullName, "r")
@@ -43,9 +43,9 @@ def read(fullName, sceneDesc):
 		 			# 20-?: variable names and values
 		 			id = int(tokens[0])
 		 			agentName = AgentDescription.formatAgentName(tokens[1])
-		 			agentDesc = sceneDesc.agentDesc( sceneDesc.resolvePath( tokens[19] ) )
+		 			agentDesc = simManager.agentDesc( simManager.resolvePath( tokens[19] ) )
 		 					 			
-			 		agent = sceneDesc.buildAgent( agentName, id, agentDesc )
+			 		agent = simManager.buildAgent( agentName, id, agentDesc )
 			 		
 					if not agent:
 						# Agent is not in one of the chosen "selections"

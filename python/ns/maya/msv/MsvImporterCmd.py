@@ -32,9 +32,9 @@ import ns.py.Errors
 import ns.py.Timer as Timer
 
 import ns.maya.msv as nmsv
-import ns.bridge.data.SceneDescription as SceneDescription
+import ns.bridge.data.SimManager as SimManager
 import ns.bridge.io.MasReader as MasReader
-from ns.bridge.data.SceneDescription import MsvOpt
+from ns.bridge.data.SimManager import MsvOpt
 import ns.maya.msv.MayaScene as MayaScene
 import ns.maya.Progress as Progress
 
@@ -207,13 +207,13 @@ class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
 					
 					Timer.push("TOTAL")
 					Progress.setTitle("Reading Files")
-					sceneDesc = SceneDescription.SceneDescription(self._options)
-					sceneDesc.load( readProgress )
+					simManager = SimManager.SimManager(self._options)
+					simManager.load( readProgress )
 					Progress.setProgress( readProgress )
 					
 					Progress.setTitle("Creating Maya Data")
 					scene = MayaScene.MayaScene()
-					scene.build( sceneDesc, buildProgress )
+					scene.build( simManager, buildProgress )
 					Progress.setProgress( readProgress + buildProgress )
 					Timer.pop()
 						
@@ -221,7 +221,7 @@ class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
 					#	print "%s: %f" % (timer, Timer.elapsed(timer))
 					
 					Progress.setTitle("Garbage Collecting")
-					del sceneDesc
+					del simManager
 					del scene
 					
 					gc.collect()

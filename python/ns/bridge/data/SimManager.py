@@ -73,7 +73,7 @@ class MsvOpt:
 	kRange = "range"
 	kAnimType = "animType"
 
-class SceneDescription:
+class SimManager:
 	def __init__(self, options):
 		self._options = options
 		try:
