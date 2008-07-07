@@ -20,11 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-source "msvSceneUtils.mel";
-
 proc loadOptionVars()
 {
-/*
 	string $simType = `optionVar -q msvSimImportSimTypeOption`;
 	optionMenuGrp -e -value $simType msvSimImportSimTypeMenu;
 
@@ -79,12 +76,10 @@ proc loadOptionVars()
 	{
 		radioButtonGrp -e -select 1 msvSimImportSelectionRadio;
 	}
-*/
 }
 
 proc resetOptionVars(int $forceFactorySettings)
 {
-/*
 	//  Use timeline
 	//
 	if ($forceFactorySettings || !`optionVar -exists msvSimImportSimTypeOption`) {
@@ -150,12 +145,10 @@ proc resetOptionVars(int $forceFactorySettings)
 	if ($forceFactorySettings || !`optionVar -exists msvSimImportUseSelectionsOption`) {
 		optionVar -intValue msvSimImportUseSelectionsOption false;
 	}
-*/
 }
 
 global proc msvSimImportCallback( string $parent )
 {
-/*
 	setParent $parent;
 
 	string $simType = `optionMenuGrp -q -value msvSimImportSimTypeMenu`;
@@ -207,13 +200,31 @@ global proc msvSimImportCallback( string $parent )
 	optionVar -intValue msvSimImportUseSelectionsOption $useSelection;
 
 	nsPerformmsvSimImport( 0 );
-	*/
 }
 
+global proc msvSimImportUpdateSelections()
+{
+	int $useSelection = (2 == `radioButtonGrp -q -select msvSimImportSelectionRadio`);
+
+	textScrollList -e -enable $useSelection msvSimImportSelectionList;
+
+	if ( $useSelection )
+	{
+		textScrollList -e -removeAll msvSimImportSelectionList;
+		string $masFile = `textFieldButtonGrp -q -fileName msvSimImportMasField`;
+		string $selections[];
+		if ( !catch($selections = `eval("msvSimImport -q -selection -masFile \"" + $masFile + "\"")`) )
+		{
+			for ( $selection in $selections )
+			{
+				textScrollList -e -append $selection msvSimImportSelectionList;
+			}
+		}
+	}
+}
 
 global proc msvSimImportHideWidgets()
 {
-/*
 	int $loadGeometry = `checkBoxGrp -q -value1 msvSimImportLoadOptions`;
 	int $loadMaterials = `checkBoxGrp -q -value2 msvSimImportLoadOptions`;
 	int $loadSegments = `checkBoxGrp -q -value3 msvSimImportLoadOptions`;
@@ -224,13 +235,50 @@ global proc msvSimImportHideWidgets()
 	checkBoxGrp -e -enable $loadSegments msvSimImportInstanceSegmentsCheck;
 	checkBoxGrp -e -enable $cacheGeometry msvSimImportDeleteSkeletonCheck;
 	textFieldButtonGrp -e -enable $cacheGeometry msvSimImportCacheField;
-*/
 }
 
+global proc int msvSimImportBrowseMas( string $file, string $type )
+{
+	if ( "mas" != `fileExtension $file` )
+	{
+		warning($file + " is not a Massive setup file (.mas).");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $file msvSimImportMasField;
+	msvSimImportUpdateSelections();
+	return true;
+}
+
+global proc int msvSimImportBrowseSim( string $dir, string $type )
+{
+	if ( !`filetest -d $dir` )
+	{
+		warning($dir + " is not a directory.");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $dir msvSimImportSimField;
+	return true;
+}
+
+global proc int msvSimImportBrowseCallsheet( string $file, string $type )
+{
+	textFieldButtonGrp -e -fileName $file msvSimImportCallsheetField;
+	return true;
+}
+
+global proc int msvSimImportBrowseCache( string $dir, string $type )
+{
+	if ( !`filetest -d $dir` )
+	{
+		warning($dir + " is not a directory.");
+		return false;
+	}
+	textFieldButtonGrp -e -fileName $dir msvSimImportCacheField;
+	return true;
+}
 
 proc msvSimImportOptions()
 {
-/*
 	resetOptionVars( false );
 
 	//	Get the option box.
@@ -552,100 +600,156 @@ proc msvSimImportOptions()
 	//	Show the option box.
 	//
 	showOptionBox();
-	*/
 }
 
-proc buildMenu()
+proc string assembleCmd()
 {
-	menu
-		-label "Groups";
-		menuItem
-			-label "Create Group"
-			-command msvCreateGroup;
-		menuItem
-			-label "Add Locators"
-			-command msvAddLocators;
-		menuItem
-			-label "Remove Locators"
-			-command msvRemoveLocators;
-}
+	string $cmd = "msvSimImport";
 
-global proc int msvIsMassive( string $node )
-{
-	return `objExists ($node + ".massive")`;
-}
-
-global proc msvSceneWin()
-{
-	// import modules
-	msvInitializePython();
-
-	if ( `window -exists msvSceneWin` )
+	string $masFile = `optionVar -q msvSimImportMasFileOption`;
+	if ( "" == $masFile )
 	{
-		deleteUI msvSceneWin;
+		error("Please choose a .mas file to import.");
 	}
-	if ( `itemFilter -exists msvSetFilter` )
+	$cmd += (" -masFile \"" + $masFile + "\"");
+
+	string $simType = `optionVar -q msvSimImportSimTypeOption`;
+	$simType = `tolower $simType`;
+	$cmd += (" -simType \"" + $simType + "\"");
+
+	string $simDir = `optionVar -q msvSimImportSimDirOption`;
+	if ( "" != $simDir )
 	{
-		delete msvSetFilter;
-	}
-	if ( `itemFilter -exists msvMassiveFilter` )
-	{
-		delete msvMassiveFilter;
+		$cmd += (" -simDir \"" + $simDir + "\"");
 	}
 
-	itemFilter -byType "objectSet" msvSetFilter;
-	itemFilter -byScript msvIsMassive msvMassiveFilter;
+	string $callsheet = `optionVar -q msvSimImportCallsheetOption`;
+	if ( "" != $callsheet )
+	{
+		$cmd += (" -callsheet \"" + $callsheet + "\"");
+	}
+
+	int $loadGeometry = `optionVar -q msvSimImportLoadGeometryOption`;
+	$cmd += (" -loadGeometry " + $loadGeometry);
+
+	int $loadSegments = `optionVar -q msvSimImportLoadSegmentsOption`;
+	$cmd += (" -loadSegments " + $loadSegments);
+
+	int $loadMaterials = `optionVar -q msvSimImportLoadMaterialsOption`;
+	$cmd += (" -loadMaterials " + $loadMaterials);
+
+	string $skinType = `optionVar -q msvSimImportSkinTypeOption`;
+	if ( "chunk" == $skinType )
+	{
+		// The command support "smooth", "duplicate", and "instance", where
+		// duplicate and instance are both forms of chunk skinning. However
+		// The current instance implementation is slower and takes more
+		// memory than duplicate, so it is not exposed through the UI
+		//
+		$skinType = "duplicate";
+	}
+	$cmd += (" -skinType \"" + $skinType + "\"");
+
+	string $animType = `optionVar -q msvSimImportAnimTypeOption`;
+	$cmd += (" -animType \"" + $animType + "\"");
+
+	string $materialType = `optionVar -q msvSimImportMaterialTypeOption`;
+	$materialType = `tolower $materialType`;
+	if ( "maya blinn" == $materialType )
+	{
+		$materialType = "blinn";
+	}
+	else if ( "maya lambert" == $materialType )
+	{
+		$materialType = "lambert";
+	}
+	$cmd += (" -materialType \"" + $materialType + "\"");
+
+	int $instanceSegments = `optionVar -q msvSimImportInstanceSegmentsOption`;
+	$cmd += (" -instanceSegments " + $instanceSegments);
+
+	int $frameStep = `optionVar -q msvSimImportFrameStepOption`;
+	$cmd += (" -frameStep " + $frameStep);
+
+	int $cacheGeometry = `optionVar -q msvSimImportCacheGeometryOption`;
+	$cmd += (" -cacheGeometry " + $cacheGeometry);
 	
-	window
-		-menuBar true
-		-menuBarVisible true
-		msvSceneWin;
-		
-		buildMenu();
-		
-		formLayout
-			-numberOfDivisions 100
-			msvSceneForm;
+	if ($cacheGeometry)
+	{
+		int $deleteSkeleton = `optionVar -q msvSimImportDeleteSkeletonOption`;
+		$cmd += (" -deleteSkeleton " + $deleteSkeleton);
 
-			outlinerEditor
-				-mainListConnection worldList
-				-selectionConnection activeList
-			    -filter msvSetFilter
-			    -setFilter msvMassiveFilter
-			    -showSetMembers true
-			    -showShapes true
-			    //-directSelect true
-			    -allowMultiSelection true
-			    msvSceneOutliner;
-		
-		setParent ..;		
-		formLayout -edit
-			-attachForm		msvSceneOutliner				"top"		5
-			-attachForm		msvSceneOutliner				"left"		5
-			-attachForm		msvSceneOutliner				"right" 	5
-			-attachForm		msvSceneOutliner					"bottom" 		5
-			
-		    msvSceneForm;
-		    
+		string $cacheDir = `optionVar -q msvSimImportCacheDirOption`;
+		if ( "" != $cacheDir )
+		{
+			$cmd += (" -cacheDir \"" + $cacheDir + "\"");
+		}		
+	}
 
-	// Dealing with the outliner panel popup menu is awkward. The
-	// -popupMenuProcedure doesn't seem to do anything, and it doesn't
-	// look like the pre-existing popup menu can be overridden. Instead
-	// I have to edit the pre-existing menu, delete all of its items,
-	// and remove the postMenuCommand... *then* I can start adding
-	// my own stuff. Luckily it looks like the popup menu is always
-	// named by tacking "Popup" onto the end of the outliner panel
-	// name.
-	//
-	// For now, though, I'll just remove the popup menu altogether.
-	deleteUI "msvSceneOutlinerPopup";
+	if ( `optionVar -q msvSimImportUseSelectionsOption` )
+	{
+		string $selections[] = `textScrollList -q -selectItem msvSimImportSelectionList`;
+		for ( $selection in $selections )
+		{
+			$cmd += (" -selection \"" + $selection + "\"");
+		}
+	}
 
-	showWindow;
-				
-	// Delete the window when there's a new scene. Since the filters will
-	// be deleted, the window'll get out of whack if it hangs around.
-	scriptJob
-		-parent msvSceneWin
-		-event "deleteAll"
-		"deleteUI msvSceneWin";
+	return $cmd;
+}
+
+global proc string nsPerformmsvSimImport( int $action )
+{
+	string $cmd = "";
+
+	switch ($action) {
+
+		//  Execute the command.
+		//
+		case 0:
+			//  Retrieve the option settings
+			//
+			resetOptionVars(false);
+
+			//  Get the command.
+			//
+			$cmd = `assembleCmd`;
+
+			//  Execute the command with the option settings.
+			//
+			evalEcho($cmd);
+
+			break;
+
+		//  Show the option box.
+		//
+		case 1:
+			msvSimImportOptions();
+			break;
+
+		//  Return the command string.
+		//
+		case 2:
+			//  Retrieve the option settings.
+			//
+			resetOptionVars (false);
+
+			//  Get the command.
+			//
+			$cmd = `assembleCmd`;
+			break;
+
+		// Reset
+		//
+		case 3:
+			resetOptionVars( true );
+			loadOptionVars();
+			break;
+	}
+	return $cmd;
+}
+
+global proc msvSimImportWin()
+{
+	nsPerformmsvSimImport(1);
 }

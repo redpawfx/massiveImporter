@@ -3,7 +3,7 @@ import os.path
 import shutil
 import py_compile
 
-_srcRoot = "C:/svn/msvImporter"
+_srcRoot = "C:/svn/msvimporter"
 _pySrcRoot = "%s/python" % _srcRoot
 _dstRoot = "C:/sandbox/msv"
 
@@ -32,9 +32,9 @@ _pyFiles = [
 		"ns/maya/msv/MayaAgent.py",
 		"ns/maya/msv/MayaPlacement.py",
 		"ns/maya/msv/MayaScene.py",
-		"ns/maya/msv/MsvImporterCmd.py",
+		"ns/maya/msv/MsvSimImportCmd.py",
 		"ns/maya/msv/MsvSimLoader.py",
-		"ns/bridge/data/SceneDescription.py",
+		"ns/bridge/data/SimManager.py",
 		"ns/bridge/data/Selection.py",
 		"ns/bridge/data/Sim.py",
 		"ns/bridge/io/SimReader.py",
@@ -45,7 +45,7 @@ _pyFiles = [
 
 _melFiles = [
 		"scripts/msvCombiner.mel",
-		"scripts/msvImporterWin.mel",
+		"scripts/msvSimImportWin.mel",
 		"scripts/msvSceneWin.mel",
 		"scripts/msvSceneUtils.mel",
 		]

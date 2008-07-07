@@ -12,7 +12,7 @@ except:
 
 try:
 	import ns.py.Timer as Timer
-	import ns.maya.msv.MsvImporterCmd as MsvImporterCmd
+	import ns.maya.msv.MsvSimImportCmd as MsvSimImportCmd
 	import ns.bridge.io.MasReader as MasReader
 except:
 	print >> sys.stderr, "Please set your PYTHONPATH to include the MsvTools 'python' directory"
@@ -58,8 +58,8 @@ def parseArgs():
 		# also need it to query the number of agents and correctly
 		# divide up the load
 		#		
-		if (arg == MsvImporterCmd.kMasFileFlagLong or
-		    arg == MsvImporterCmd.kMasFileFlag):
+		if (arg == MsvSimImportCmd.kMasFileFlagLong or
+		    arg == MsvSimImportCmd.kMasFileFlag):
 			args['masFile'] = sys.argv[i+1]
 			
 		i += 1
@@ -119,7 +119,7 @@ def main():
 		
 		mel = 'cmdFileOutput -o \\"%s\\";' % tempLog
 		mel += ' loadPlugin \\"MsvTools.py\\";'
-		mel += ' msvImporter%s%s;' % (rangeStr, flags)
+		mel += ' msvSimImport%s%s;' % (rangeStr, flags)
 		mel += ' file -rename \\"%s\\";' % currentFile
 		mel += ' file -f -uc 0 -type \\"%s\\" -save;' % args['outputType']
 		mel += ' cmdFileOutput -closeAll;'

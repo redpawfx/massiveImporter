@@ -38,7 +38,7 @@ from ns.bridge.data.SimManager import MsvOpt
 import ns.maya.msv.MayaScene as MayaScene
 import ns.maya.Progress as Progress
 
-kName = "msvImporter"
+kName = "msvSimImport"
 
 kSimDirFlag = "-sd"
 kSimDirFlagLong = "-simDir"
@@ -75,7 +75,7 @@ kRangeFlagLong = "-range"
 kAnimTypeFlag = "-at"
 kAnimTypeFlagLong = "-animType"
 	
-class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
+class MsvSimImportCmd( OpenMayaMPx.MPxCommand ):
 	def __init__(self):
 		OpenMayaMPx.MPxCommand.__init__(self)
 		self._reset()
@@ -237,7 +237,7 @@ class MsvImporterCmd( OpenMayaMPx.MPxCommand ):
 
 		
 def creator():
-	return OpenMayaMPx.asMPxPtr( MsvImporterCmd() )
+	return OpenMayaMPx.asMPxPtr( MsvSimImportCmd() )
 
 def syntaxCreator():
 	syntax = OpenMaya.MSyntax()
