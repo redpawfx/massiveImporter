@@ -40,8 +40,9 @@ class Locator:
 		self.group = groupId
 		self.position = tuple(position)
 
-class MasDescription:
+class MasSpec:
 	def __init__(self):
+		# public
 		self.path = ""
 		self.masFile = ""
 		self.cdlFiles = []
@@ -50,3 +51,13 @@ class MasDescription:
 		self.locators = []
 		self.selectionGroup = Selection.SelectionGroup()
 		self.numAgents = 0
+		
+		# private
+		self._rootPath = ""
+		
+	def setMasFile(self, masFile):
+		self.masFile = masFile
+		self._rootPath = os.path.dirname(masFile)
+	
+	def rootPath(self):
+		return self._rootPath

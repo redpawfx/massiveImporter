@@ -23,7 +23,7 @@
 import sys
 import os.path
 
-import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.MasSpec as MasSpec
 
 def _writePlace(fileHandle, mas):
 	'''Write a Place block.'''

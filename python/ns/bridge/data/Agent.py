@@ -25,9 +25,18 @@ import random
 import re
 import os.path
 
-import ns.py.Timer as Timer
-import ns.bridge.data.AgentDescription as AgentDescription
-import ns.bridge.data.Sim as Sim
+import ns.bridge.data.SimData as SimData
+
+def formatAgentName( name, id="" ):
+	'''Convenience function to make sure all of the agent
+	   names are consistent. Sometimes they are read in
+	   two parts, and sometimes that use a '.' as a delimeter,
+	   etc...'''
+	agentName = name
+	if id:
+		agentName = "%s_%s" % (name, id)
+	agentName = re.sub('\.', '_', agentName)
+	return agentName
 
 class Agent:
 	def __init__(self):
@@ -36,25 +45,25 @@ class Agent:
 	def reset(self):
 		self.name = ""
 		self.id = -1
-		self.agentDesc = None
+		self.agentSpec = None
 		self.variableValues = {}
  		self.placement = [ 1.0, 0.0, 0.0, 0.0, \
 						   0.0, 1.0, 0.0, 0.0, \
 						   0.0, 0.0, 1.0, 0.0, \
 						   0.0, 0.0, 0.0, 1.0 ]
- 		self._sim = Sim.Agent("")
+ 		self._simData = SimData.Agent("")
 
-	def msvJoint(self, jointName):
-		return self.agentDesc.joints[jointName]
+	def joint(self, jointName):
+		return self.agentSpec.joints[jointName]
 
-	def sim(self):
-		return self._sim
+	def simData(self):
+		return self._simData
 	
-	def setSim(self, sim):
-		self._sim = sim
-		self._sim.prune( self.agentDesc.joints.keys() )
-		for jointSim in self._sim.joints():
-			joint = self.msvJoint( jointSim.name() )
+	def setSimData(self, simData):
+		self._simData = simData
+		self._simData.prune( self.agentSpec.joints.keys() )
+		for jointSim in self._simData.joints():
+			joint = self.joint( jointSim.name() )
 			jointSim.setOrderDOF( joint.order, joint.dof )
 
 
@@ -76,7 +85,7 @@ class Agent:
 		   variable names with quotes so we have to search the expression
 		   for every possible variable'''
 		expr = rawExpression
-		for var in self.agentDesc.variables.keys():
+		for var in self.agentSpec.variables.keys():
 			matches = re.search( var, expr )
 			if matches:
 				value = self.variableValue( matches.group(0), False )
@@ -95,7 +104,7 @@ class Agent:
 		try:
 			# Default value will be used if variation has been disabled
 			#
-			value = self.agentDesc.variables[variableName].default
+			value = self.agentSpec.variables[variableName].default
 		except:
 			value = 0.0
 
@@ -106,8 +115,8 @@ class Agent:
 				# Variable has been fixed by a sim or computed earlier
 				#
 				value = self.variableValues[variableName]
-			elif variableName in self.agentDesc.variables:
-				variable = self.agentDesc.variables[variableName]
+			elif variableName in self.agentSpec.variables:
+				variable = self.agentSpec.variables[variableName]
 				if variable.expression:
 					value = self.evalExpression( variable.expression )
 				else:

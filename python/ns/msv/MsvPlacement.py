@@ -24,15 +24,14 @@ import sys
 
 import ns.py
 import ns.py.Errors
-import ns.py.Timer as Timer
 
-import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.MasSpec as MasSpec
 import ns.bridge.io.MasWriter as MasWriter
 
 import massive
 
 def build( mas ):
-	'''Given a MasDescription object describing a Massive setup, updated and
+	'''Given a MasSpec object describing a Massive setup, updated and
 	   create the described Massive entities. For now only locators are supported.
 	'''
 	# List of Massive Group objects
@@ -78,21 +77,21 @@ def dump( fileHandle, groups ):
 	'''Look through the Massive scene and dump to fileHandle, in .mas format,
 	   all of the Groups specified by 'groups' as well as their Locators.
 	'''
-	# The MasDescription object is an intermediary data format
+	# The MasSpec object is an intermediary data format
 	# which MasWriter/MasReader write from and read to
-	mas = MasDescription.MasDescription()
+	mas = MasSpec.MasSpec()
 	for name in groups:
 		# Find the named Massive Group
 		group = massive.find_group(name)
 		if not group:
 			continue
 		id = len(mas.groups)
-		mas.groups.append(MasDescription.Group(id, name))
+		mas.groups.append(MasSpec.Group(id, name))
 		
-		# Add each of the Group's locators to the MasDescription
+		# Add each of the Group's locators to the MasSpec
 		for i in range(group.n_locator):
 			locator = group.get_locator(i)
 			position = (locator.px, locator.py, locator.pz)
-			mas.locators.append(MasDescription.Locator(id, position))
+			mas.locators.append(MasSpec.Locator(id, position))
 	# Dump the data to fileHandle
 	MasWriter.write(fileHandle, mas)

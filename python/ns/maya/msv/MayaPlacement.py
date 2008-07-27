@@ -28,13 +28,10 @@ from maya.OpenMaya import *
 
 import ns.py
 import ns.py.Errors as Errors
-import ns.py.Timer as Timer
-import ns.maya.Progress as Progress
 
 import ns.maya.msv
-import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.MasSpec as MasSpec
 import ns.bridge.io.MasWriter as MasWriter
-import ns.bridge.io.MasReader as MasReader
 
 def getGroupsSet(create=False):
 	'''The groups set is a set which contains all of the sets representing
@@ -121,11 +118,10 @@ def isGroup(group):
 	return ("objectSet" == mc.nodeType(group) and
 			mc.objExists("%s.massive" % group))
 
-def build( fileHandle ):
-	'''Given a text stream in the format of a .mas file, build the described
-	   Massive setup using Maya objects. For now only locators are supported.
+def build( mas ):
+	'''Given a MasSpec, build the described Massive setup using Maya
+	   objects. For now only locators are supported.
 	'''
-	mas = MasReader.read(fileHandle)
 	
 	# List of Maya objects representing locators, indexed by the
 	# id of their group. These objects will be updated by incoming
@@ -141,6 +137,8 @@ def build( fileHandle ):
 	# is updated or created.
 	mayaGroupCounts = []
 	for g in mas.groups:
+		if not g:
+			continue
 		createGroup(g.name, force=False)
 		# Initialize mayaGroupLocators with the pre-existing set
 		# members.
@@ -190,13 +188,13 @@ def dump( fileHandle ):
 	groups = mc.sets( groupsSet, query=True )
 	if not groups:
 		groups = []
-	# This MasDescription object will be populated with the Massive
+	# This MasSpec object will be populated with the Massive
 	# setup data and written to 'fileHandle'
-	mas = MasDescription.MasDescription()
+	mas = MasSpec.MasSpec()
 
 	groupId = 0
 	for group in groups:
-		mas.groups.append( MasDescription.Group( groupId, group ) )
+		mas.groups.append( MasSpec.Group( groupId, group ) )
 		# Get all the Massive locators in 'group'
 		locators = mc.sets( group, query=True )
 		if not locators:
@@ -207,7 +205,7 @@ def dump( fileHandle ):
 								 query=True,
 								 translation=True,
 								 worldSpace=True )
-			mas.locators.append( MasDescription.Locator( groupId, position ) )
+			mas.locators.append( MasSpec.Locator( groupId, position ) )
 		groupId += 1
 		
 	# Write the Massive setup information to 'fileHandle'

@@ -35,17 +35,6 @@ def isRotateEnum( channelEnum ):
 def isTranslateEnum( channelEnum ):
 	return channelEnum < kRX
 
-def formatAgentName( name, id="" ):
-	'''Convenience function to make sure all of the agent
-	   names are consistent. Sometimes they are read in
-	   two parts, and sometimes that use a '.' as a delimeter,
-	   etc...'''
-	agentName = name
-	if id:
-		agentName = "%s_%s" % (name, id)
-	agentName = re.sub('\.', '_', agentName)
-	return agentName
-
 class Material:
 	def __init__(self):
 		self.name = ""
@@ -210,7 +199,7 @@ class Disc(Primitive):
 		self.length = 1.0
 
 class Joint:
- 	def __init__(self, agentDesc):
+ 	def __init__(self, agentSpec):
  		self.name = ""
  		self.parent = ""
  		self.dof = [ True ] * 6
@@ -219,7 +208,7 @@ class Joint:
  		self.translate = []
  		self.transform = []
 		self.scaleVar = ""
- 		self.agentDesc = agentDesc	
+ 		self.agentSpec = agentSpec	
 
 class Variable:
 	def __init__(self):
@@ -230,15 +219,17 @@ class Variable:
 		self.expression = ""
 
 # Node definition
-class AgentDescription:
+class AgentSpec:
 	def __init__(self):
 		self.reset()
 	
 	def reset(self):
-		self.cdl = ""
+		# public
+		self.cdlFile = ""
+		self.bindPoseFile = ""
 		self.agentType = ""
 		self.scaleVar = ""
-		# represented as Sim.Joint - but there will only be one frame of data
+		# represented as SimData.Joint - but there will only be one frame of data
 		self.bindPoseData = None
 		self.jointData = []
 		self.geoDB = GeoDB()
@@ -248,11 +239,20 @@ class AgentDescription:
 		# map Massive joint name to the joint object
 		self.joints = {}
 		
+		# private
+		self._rootPath = ""
+	
+	def setCdlFile(self, cdlFile):
+		self.cdlFile = cdlFile
+		self._rootPath = os.path.dirname(cdlFile)
+		
 	def setBindPose(self, agentSim):
 		self.bindPoseData = agentSim
 		self.bindPoseData.prune( self.joints.keys() )
 		for jointSim in self.bindPoseData.joints():
 			joint = self.joints[ jointSim.name() ]
 			jointSim.setOrderDOF( joint.order, joint.dof )
-
+			
+	def rootPath(self):
+		return self._rootPath
    

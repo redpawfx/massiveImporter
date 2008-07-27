@@ -25,8 +25,6 @@
 import sys
 import os.path
 
-import ns.bridge.data.Sim as Sim
-
 class APFReader:
 	def __init__(self, fullName):
 		'''Initialize the APF reader by parsing the file name. APF sim files
@@ -35,23 +33,23 @@ class APFReader:
 		self.frame = int(tokens[1])
 		self.fullName = fullName
 
-	def read(self, sim):
+	def read(self, simData):
 		'''Load animation data from an APF file. Adds a single frame's
 		   worth of animation data to each agent'''
 	 
 	 	# Python 2.4 limitation: try... except: finally: doesn't work,
 	 	# have to nest try... except: in try... finally:
+	 	path = os.path.dirname( self.fullName )
+		fileHandle = open(self.fullName, "r")
 		try:
 			try:
-		 		path = os.path.dirname( self.fullName )
-		 		fileHandle = open(self.fullName, "r")
 		 		agent = None
 		 		
 		 		for line in fileHandle:
 		 			tokens = line.strip().split()
 		 			if tokens:
 		 				if tokens[0] == "BEGIN":
-		 					agent = sim.agent( tokens[1] )
+		 					agent = simData.agent( tokens[1] )
 		 					if not agent:
 								# Agent is not in one of the chosen "selections"
 								#

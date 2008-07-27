@@ -25,17 +25,26 @@ import sys
 import ns
 import ns.py as nsp
 import ns.py.Errors
-import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.AgentSpec as AgentSpec
 
-class Sim:	
+class SimData:
+	'''Simmed animation data for a bunch of agents. The animation data only
+	   needs agent and joint names as well as the keyframe data. To avoid
+	   the overhead associated with initializing a full blown agent instance
+	   the SimData is stored in a data structure separate from the Sim class.
+	   This is primarily to support applications like the msvSimLoader which
+	   may only have access to the simulation .amc/.apf files and not the
+	   .cdl files needed to define a full agent instance. 
+	   This data structure resembles that of the Sim class:
+	   a map of agents, each of which storing a map of joints.'''
 	def __init__(self, selectionGroup=None):
 		self._agents = {}
 		self._selectionGroup = selectionGroup
 		
 	def agent(self, name):
-		'''Return the sim data for agent 'name'. A new Sim.Agent object will
+		'''Return the sim data for agent 'name'. A new SimData.Agent object will
 		   be created if necessary. If a selection group was provided when
-		   initializing the Sim, check that the specified agent is in the
+		   initializing the SimData, check that the specified agent is in the
 		   selection.'''
 		if self._selectionGroup:
 			id = int(name.split("_")[-1])
@@ -124,7 +133,7 @@ class Joint:
 		for channel in range(len(order)):
 			if not dof[channel]:
 				continue
-			channelName = AgentDescription.enum2Channel[order[channel]]
+			channelName = AgentSpec.enum2Channel[order[channel]]
 			self._order[channelName] = i
 			i += 1
 		

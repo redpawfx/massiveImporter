@@ -23,7 +23,7 @@
 import sys
 import os.path
 
-import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.MasSpec as MasSpec
 import ns.bridge.data.Selection as Selection
 
 def _handleTerrain( fileHandle, tokens, mas ):
@@ -79,11 +79,11 @@ def _handlePlace( fileHandle, tokens, mas ):
 				for i in range(3):
 					tokens = fileHandle.next().strip().split()
 					if tokens[0] == "cdl" and len(tokens) > 1:
-						mas.cdlFiles.append( MasDescription.CdlFile( tokens[1], name ) )
+						mas.cdlFiles.append( MasSpec.CdlFile( tokens[1], name ) )
 				# Create a group and add it to the groups array indexed
 				# by its 'id'
 				#
-				group = MasDescription.Group( id, name )
+				group = MasSpec.Group( id, name )
 				if id >= len(mas.groups):
 					mas.groups.extend([ None ] * (id - len(mas.groups) + 1))
 				mas.groups[id] = group
@@ -116,29 +116,39 @@ def _handlePlace( fileHandle, tokens, mas ):
 				# position
 				group = int(tokens[1])
 				position = ( float(tokens[2].replace("[", "")), float(tokens[3]), float(tokens[4].replace("]", "")) )
-				mas.locators.append(MasDescription.Locator(group, position))
+				mas.locators.append(MasSpec.Locator(group, position))
 			else:
 				# skip the other tags for now
 				pass
 	return []
 
-def read(fileHandle):
+def read(masFile):
 	'''Load information about the Massive setup'''
  
-	mas = MasDescription.MasDescription()
+	mas = MasSpec.MasSpec()
+	if isinstance(masFile, basestring):
+		mas.masFile = masFile
+		fileHandle = open(masFile, "r")
+	else:
+		fileHandle = masFile
 
  	try:
-		for line in fileHandle:
-			tokens = line.strip().split()
-	 		if tokens:
-	 			if tokens[0] == "Terrain":
-	 				tokens = _handleTerrain( fileHandle, tokens, mas )
-	 			elif tokens[0] == "Place":
-	 				tokens = _handlePlace( fileHandle, tokens, mas )
-	 			else:
-	 				pass
+ 		try:
+			for line in fileHandle:
+				tokens = line.strip().split()
+		 		if tokens:
+		 			if tokens[0] == "Terrain":
+		 				tokens = _handleTerrain( fileHandle, tokens, mas )
+		 			elif tokens[0] == "Place":
+		 				tokens = _handlePlace( fileHandle, tokens, mas )
+		 			else:
+		 				pass
+		finally:
+		 	if fileHandle != masFile:
+		 		# I opened fileHandle so I have to close it
+		 		fileHandle.close()
 	except:
-	 	print >> sys.stderr, "Error reading MAS file"
+	 	print >> sys.stderr, "Error reading MAS file."
 	 	raise
 	 	
  	return mas

@@ -22,13 +22,16 @@
 
 import sys
 
-import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.AgentSpec as AgentSpec
 import ns.bridge.data.Agent as Agent
 
-def read(fullName, simManager):
+def read(callsheet, sim):
 	'''Load the simmed values of agent variables'''
  
-	fileHandle = open(fullName, "r")
+ 	if isinstance(callsheet, basestring):
+		fileHandle = open(callsheet, "r")
+	else:
+		fileHandle = callsheet
  	
  	try:
  		try:
@@ -42,10 +45,10 @@ def read(fullName, simManager):
 		 			# 19  : cdl file path
 		 			# 20-?: variable names and values
 		 			id = int(tokens[0])
-		 			agentName = AgentDescription.formatAgentName(tokens[1])
-		 			agentDesc = simManager.agentDesc( simManager.resolvePath( tokens[19] ) )
+		 			agentName = Agent.formatAgentName(tokens[1])
+		 			agentSpec = sim.scene.agentSpec(sim.scene.resolvePath(tokens[19]))
 		 					 			
-			 		agent = simManager.buildAgent( agentName, id, agentDesc )
+			 		agent = sim.agent(agentName, id, agentSpec)
 			 		
 					if not agent:
 						# Agent is not in one of the chosen "selections"
@@ -56,9 +59,10 @@ def read(fullName, simManager):
 		 			for i in range(20, len(tokens), 2 ):
 		 				agent.variableValues[tokens[i]] = float(tokens[i+1])
 		finally:
-		 	fileHandle.close()
+			if fileHandle != callsheet:
+		 		fileHandle.close()
 	except:
- 		print >> sys.stderr, "Error reading variables file %s" % fullName
+ 		print >> sys.stderr, "Error reading callsheet."
  		raise
 
 

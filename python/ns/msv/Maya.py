@@ -26,7 +26,7 @@ import thread
 
 import massive
 
-import ns.bridge.data.MasDescription as MasDescription
+import ns.bridge.data.MasSpec as MasSpec
 import ns.bridge.io.MasWriter as MasWriter
 import ns.bridge.io.MasReader as MasReader
 import ns.py.Errors as Errors

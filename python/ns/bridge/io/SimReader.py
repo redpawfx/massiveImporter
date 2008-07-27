@@ -23,13 +23,10 @@
 import sys
 import os.path
 
-import ns.py.Timer as Timer
-import ns.maya.Progress as Progress
-
 import ns.bridge.io.AMCReader as AMCReader
 import ns.bridge.io.APFReader as APFReader
 
-def _readAPFSim( simFiles, sim, progressRange ):
+def _readAPFSim( simFiles, simData ):
 	# Sort the files first to guarantee that samples are added to the sim
 	# in sequential order. Otherwise it becomes awkward to manage the channel
 	# data if the sim doesn't always start at frame 1
@@ -40,43 +37,32 @@ def _readAPFSim( simFiles, sim, progressRange ):
 	
 	apfFiles.sort( APFReader.APFReader.cmp )
 
-	progressIncrement = int(progressRange / len(apfFiles))	
 	for apfFile in apfFiles:
-		Timer.push("Read APF")
-		Progress.setProgressStatus(os.path.basename(apfFile.fullName))
-		apfFile.read( sim )
-		Progress.advanceProgress( progressIncrement )
-		Timer.pop()
+		apfFile.read( simData )
 
-def _readAMCSim( simFiles, sim, progressRange ):
-	progressIncrement = int(progressRange / len(simFiles))	
+def _readAMCSim( simFiles, simData ):
 	for simFile in simFiles:
-		Progress.setProgressStatus(os.path.basename(simFile))
-		Timer.push("Read AMC")
-		amcFile = AMCReader.AMCReader( simFile )
-		amcFile.read( sim )
-		Timer.pop()
-		Progress.advanceProgress( progressIncrement )
+		AMCReader.read( simFile, simData )
 
-def read(dirPath, simType, sim, progressRange=0):
+def read(simDir, simType, simData):
 	'''Load sim files from a sim directory'''
 	
 	try:
-		simFiles = [ "%s%s" % (dirPath, file) for file in os.listdir(dirPath) if os.path.splitext(file)[1] == simType ]
+		simFiles = [ "%s/%s" % (simDir, file) for file in os.listdir(simDir) if os.path.splitext(file)[1] == simType ]
 		
 		if not simFiles:
 			print >> sys.stderr, "Warning: no sim files of type %s found." % simType
 			return
 		
 		if ".amc" == simType:
-			return _readAMCSim( simFiles, sim, progressRange )
+			return _readAMCSim( simFiles, simData )
 		elif ".apf" == simType:
-			return _readAPFSim( simFiles, sim, progressRange )
+			return _readAPFSim( simFiles, simData )
 		else:
 			raise "Unknown sim type: %s" % simType
 	 		
  	except:
- 		print >> sys.stderr, "Error reading simulation: %s" % dirPath	
+ 		print >> sys.stderr, "Error reading simulation: %s" % simDir	
  		raise
 
         

@@ -27,16 +27,17 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 import maya.cmds as mc
 
-import ns.py as npy
+import ns.py
 import ns.py.Errors
-import ns.py.Timer as Timer
 
-import ns.maya.msv as nmsv
-import ns.bridge.data.SimManager as SimManager
+import ns.maya.msv
 import ns.bridge.io.MasReader as MasReader
-from ns.bridge.data.SimManager import MsvOpt
-import ns.maya.msv.MayaScene as MayaScene
-import ns.maya.Progress as Progress
+import ns.bridge.data.Scene as Scene
+import ns.bridge.data.Sim as Sim
+import ns.maya.msv.MayaSkin as MayaSkin
+import ns.maya.msv.MayaSim as MayaSim
+import ns.maya.msv.MayaAgent as MayaAgent
+import ns.maya.msv.MayaSimAgent as MayaSimAgent
 
 kName = "msvSimImport"
 
@@ -78,52 +79,75 @@ kAnimTypeFlagLong = "-animType"
 class MsvSimImportCmd( OpenMayaMPx.MPxCommand ):
 	def __init__(self):
 		OpenMayaMPx.MPxCommand.__init__(self)
-		self._reset()
 		
-	def _reset(self):
-		self._options = {}
-	
 	def isUndoable( self ):
 		return False
 	
 	def _parseArgs( self, argData ):		
-		self._options[MsvOpt.kLoadSkeleton] = True
-		self._options[MsvOpt.kLoadGeometry] = True
-		self._options[MsvOpt.kLoadSkin] = True
-		self._options[MsvOpt.kLoadPrimitives] = True
-		self._options[MsvOpt.kLoadMaterials] = True
-		self._options[MsvOpt.kLoadActions] = False
-		self._options[MsvOpt.kMaterialType] = "blinn"
-		self._options[MsvOpt.kFrameStep] = 1
-		self._options[MsvOpt.kInstancePrimitives] = True
-		self._options[MsvOpt.kSkinType] = "smooth"
-		self._options[MsvOpt.kCacheGeometry] = False
-		self._options[MsvOpt.kDeleteSkeleton] = False
-		self._options[MsvOpt.kAnimType] = "curves"
-				
-		if argData.isFlagSet( kSimDirFlag ):
-			self._options[MsvOpt.kSimDir] = argData.flagArgumentString( kSimDirFlag, 0 )
-		if argData.isFlagSet( kSimTypeFlag ):
-			self._options[MsvOpt.kSimType] = argData.flagArgumentString( kSimTypeFlag, 0 )
-		if argData.isFlagSet( kMasFileFlag ):
-			self._options[MsvOpt.kMasFile] = argData.flagArgumentString( kMasFileFlag, 0 )
-		if argData.isFlagSet( kCallsheetFlag ):
-			self._options[MsvOpt.kCallsheet] = argData.flagArgumentString( kCallsheetFlag, 0 )
-		if argData.isFlagSet( kLoadGeometryFlag ):
-			self._options[MsvOpt.kLoadGeometry] = argData.flagArgumentBool( kLoadGeometryFlag, 0 )
-			self._options[MsvOpt.kLoadSkin] = argData.flagArgumentBool( kLoadGeometryFlag, 0 )
+		options = {}	
+		if argData.isFlagSet(kSimDirFlag):
+			options[kSimDirFlag] = argData.flagArgumentString(kSimDirFlag, 0 )
+		else:
+			options[kSimDirFlag] = ""
+			
+		if argData.isFlagSet(kSimTypeFlag):
+			options[kSimTypeFlag] = ".%s" % argData.flagArgumentString(kSimTypeFlag, 0)
+		else:
+			options[kSimTypeFlag] = ".amc"
+			
+		if argData.isFlagSet(kMasFileFlag):
+			options[kMasFileFlag] = argData.flagArgumentString(kMasFileFlag, 0)
+		else:
+			raise ns.py.Errors.BadArgumentError("The %s/%s flag is required" % (kMasFileFlagLong, kMasFileFlag)) 
+		
+		if argData.isFlagSet(kCallsheetFlag):
+			options[kCallsheetFlag] = argData.flagArgumentString(kCallsheetFlag, 0)
+		else:
+			options[kCallsheetFlag] = ""
+			
+		if argData.isFlagSet(kLoadGeometryFlag):
+			options[kLoadGeometryFlag] = argData.flagArgumentBool(kLoadGeometryFlag, 0)
+		else:
+			options[kLoadGeometryFlag] = True
+			
 		if argData.isFlagSet( kSkinTypeFlag ):
-			self._options[MsvOpt.kSkinType] = argData.flagArgumentString( kSkinTypeFlag, 0 )
+			str = argData.flagArgumentString( kSkinTypeFlag, 0 )
+			if (str == "smooth"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.smooth
+			elif (str == "duplicate"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.duplicate
+			elif (str == "instance"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.instance
+			else:
+				raise ns.py.Errors.BadArgumentError( 'Please choose either "smooth", "duplicate", or "instance" as the skinType' )
+		else:
+			options[kSkinTypeFlag] = MayaSkin.eSkinType.smooth
+			
 		if argData.isFlagSet( kLoadSegmentsFlag ):
-			self._options[MsvOpt.kLoadPrimitives] = argData.flagArgumentBool( kLoadSegmentsFlag, 0 )
+			options[kLoadSegmentsFlag] = argData.flagArgumentBool( kLoadSegmentsFlag, 0 )
+		else:
+			options[kLoadSegmentsFlag] = False
+			
 		if argData.isFlagSet( kLoadMaterialsFlag ):
-			self._options[MsvOpt.kLoadMaterials] = argData.flagArgumentBool( kLoadMaterialsFlag, 0 )
-		if argData.isFlagSet( kMaterialTypeFlag ):
-			self._options[MsvOpt.kMaterialType] = argData.flagArgumentString( kMaterialTypeFlag, 0 )
+			options[kLoadMaterialsFlag] = argData.flagArgumentBool( kLoadMaterialsFlag, 0 )
+		else:
+			options[kLoadMaterialsFlag] = True
+			
+		if argData.isFlagSet(kMaterialTypeFlag):
+			options[kMaterialTypeFlag] = argData.flagArgumentString(kMaterialTypeFlag, 0)
+		else:
+			options[kMaterialTypeFlag] = "blinn"
+			
 		if argData.isFlagSet( kFrameStepFlag ):
-			self._options[MsvOpt.kFrameStep] = argData.flagArgumentInt( kFrameStepFlag, 0 )
+			options[kFrameStepFlag] = argData.flagArgumentInt( kFrameStepFlag, 0 )
+		else:
+			options[kFrameStepFlag] = 1
+			
 		if argData.isFlagSet( kInstanceSegmentsFlag ):
-			self._options[MsvOpt.kInstancePrimitives] = argData.flagArgumentBool( kInstanceSegmentsFlag, 0 )
+			options[kInstanceSegmentsFlag] = argData.flagArgumentBool( kInstanceSegmentsFlag, 0 )
+		else:
+			options[kInstanceSegmentsFlag] = True
+			
 		if argData.isFlagSet( kSelectionFlag ):
 			selections =[]
 			num = argData.numberOfFlagUses( kSelectionFlag )
@@ -132,39 +156,55 @@ class MsvSimImportCmd( OpenMayaMPx.MPxCommand ):
 				argData.getFlagArgumentList( kSelectionFlag, i, args )
 				if args.length():
 					selections.append( args.asString(0) )
-			self._options[MsvOpt.kSelections] = selections
-		if argData.isFlagSet( kCacheGeometryFlag ):
-			self._options[MsvOpt.kCacheGeometry] = argData.flagArgumentBool( kCacheGeometryFlag, 0 )
-		if argData.isFlagSet( kDeleteSkeletonFlag ):
-			self._options[MsvOpt.kDeleteSkeleton] = argData.flagArgumentBool( kDeleteSkeletonFlag, 0 )
-		if argData.isFlagSet( kCacheDirFlag ):
-			self._options[MsvOpt.kCacheDir] = argData.flagArgumentString( kCacheDirFlag, 0 )
-		if argData.isFlagSet( kRangeFlag ):
-			self._options[MsvOpt.kRange] = argData.flagArgumentString( kRangeFlag, 0 )
-		if argData.isFlagSet( kAnimTypeFlag ):
-			self._options[MsvOpt.kAnimType] = argData.flagArgumentString( kAnimTypeFlag, 0 )
+			options[kSelectionFlag] = selections
+		else:
+			options[kSelectionFlag] = []
 			
-		if not MsvOpt.kMasFile in self._options:
-			raise npy.Errors.BadArgumentError( "The -masFile/-mas flag is required" )
-		
-		if self._options[MsvOpt.kMaterialType] != "blinn" and \
-		   self._options[MsvOpt.kMaterialType] != "lambert":
-			raise npy.Errors.BadArgumentError( 'Please choose either "blinn" or "lambert" as the materialType' )
+		if argData.isFlagSet( kCacheGeometryFlag ):
+			options[kCacheGeometryFlag] = argData.flagArgumentBool( kCacheGeometryFlag, 0 )
+		else:
+			options[kCacheGeometryFlag] = False
+			
+		if argData.isFlagSet( kDeleteSkeletonFlag ):
+			options[kDeleteSkeletonFlag] = argData.flagArgumentBool( kDeleteSkeletonFlag, 0 )
+		else:
+			options[kDeleteSkeletonFlag] = False
+			
+		if argData.isFlagSet( kCacheDirFlag ):
+			options[kCacheDirFlag] = argData.flagArgumentString( kCacheDirFlag, 0 )
+		else:
+			options[kCacheDirFlag] = ""
+			
+		if argData.isFlagSet( kRangeFlag ):
+			options[kRangeFlag] = argData.flagArgumentString( kRangeFlag, 0 )
+		else:
+			options[kRangeFlag] = ""
+			
+		if argData.isFlagSet( kAnimTypeFlag ):
+			str = argData.flagArgumentString( kAnimTypeFlag, 0 )
+			if (str == "curves"):
+				options[kAnimTypeFlag] = MayaSimAgent.eAnimType.curves
+			elif (str == "loader"):
+				options[kAnimTypeFlag] = MayaSimAgent.eAnimType.loader
+			else:
+				raise ns.py.Errors.BadArgumentError( 'Please choose either "curves" or "loader" as the animType' )
+		else:
+			options[kAnimTypeFlag] = MayaSimAgent.eAnimType.curves
+					
+		if ( options[kMaterialTypeFlag] != "blinn" and
+		     options[kMaterialTypeFlag] != "lambert" ):
+			raise ns.py.Errors.BadArgumentError( 'Please choose either "blinn" or "lambert" as the materialType' )
 
-		if self._options[MsvOpt.kSkinType] != "smooth" and \
-		   self._options[MsvOpt.kSkinType] != "duplicate" and \
-		   self._options[MsvOpt.kSkinType] != "instance":
-			raise npy.Errors.BadArgumentError( 'Please choose either "smooth", "duplicate", or "instance" as the skinType' )
-		
-		if self._options[MsvOpt.kDeleteSkeleton] and \
-		   not self._options[MsvOpt.kCacheGeometry]:
-			raise npy.Errors.BadArgumentError( 'The skeleton can only be deleted when caching geometry' )
+		if (options[kDeleteSkeletonFlag] and not options[kCacheGeometryFlag]):
+			raise ns.py.Errors.BadArgumentError( 'The skeleton can only be deleted when caching geometry' )
 
-		if self._options[MsvOpt.kCacheGeometry] and \
-		   "smooth" != self._options[MsvOpt.kSkinType]:
-			self._options[MsvOpt.kCacheGeometry] = False
-			self._options[MsvOpt.kDeleteSkeleton] = False
+		if ( options[kCacheGeometryFlag] and
+		     MayaSkin.eSkinType.smooth != options[kSkinTypeFlag] ):
+			options[kCacheGeometryFlag] = False
+			options[kDeleteSkeletonFlag] = False
 			self.displayWarning( 'Skin type is "%s", geometry will not be cached. Please set skin type to "smooth" to use geometry caching.' % self._options[MsvOpt.kSkinType] )
+	
+		return options
 			
 	def doQuery( self, argData ):
 		if argData.isFlagSet( kSelectionFlag ):
@@ -177,60 +217,58 @@ class MsvSimImportCmd( OpenMayaMPx.MPxCommand ):
 					fileHandle.close()
 				self.setResult( mas.selectionGroup.selectionNames() )
 			else:
-				raise npy.Error.BadArgumentError( "When querying the -selection flag please use the -masFile to indicate which .mas file's selections to query." )
+				raise ns.py.Error.BadArgumentError( "When querying the -selection flag please use the -masFile to indicate which .mas file's selections to query." )
 		else:
-			raise npy.Error.BadArgumentError( 'Only the -selection flag is queryable.' )
+			raise ns.py.Error.BadArgumentError( 'Only the -selection flag is queryable.' )
 	
 	def doIt(self,argList):
-		#
-		self._reset()
-		
 		argData = OpenMaya.MArgDatabase( self.syntax(), argList )
 
 		if argData.isQuery():
 			self.doQuery( argData )
 		else:
-			self._parseArgs( argData )
+			options = self._parseArgs( argData )
 			
-			maxRange = 100000
-			readProgress = int( 0.25 * maxRange )
-			gcProgress = int(0.05 * maxRange)
-			buildProgress = maxRange - readProgress - gcProgress
-			
-			Progress.reset(maxRange)
-	
 			undoQueue = mc.undoInfo( query=True, state=True )
 	
 			try:
 				try:
 					mc.undoInfo( state=False )
 					
-					Timer.push("TOTAL")
-					Progress.setTitle("Reading Files")
-					simManager = SimManager.SimManager(self._options)
-					simManager.load( readProgress )
-					Progress.setProgress( readProgress )
+					scene = Scene.Scene()
+					scene.setMas(options[kMasFileFlag])
 					
-					Progress.setTitle("Creating Maya Data")
-					scene = MayaScene.MayaScene()
-					scene.build( simManager, buildProgress )
-					Progress.setProgress( readProgress + buildProgress )
-					Timer.pop()
+					sim = Sim.Sim(scene,
+								  options[kSimDirFlag],
+								  options[kSimTypeFlag],
+								  options[kCallsheetFlag],
+								  options[kSelectionFlag],
+								  options[kRangeFlag])
+				
+					agentOptions = MayaAgent.Options()
+					agentOptions.loadGeometry = options[kLoadGeometryFlag]
+					agentOptions.loadPrimitives = options[kLoadSegmentsFlag]
+					agentOptions.loadMaterials = options[kLoadMaterialsFlag]
+					agentOptions.skinType = options[kSkinTypeFlag]
+					agentOptions.instancePrimitives = options[kInstanceSegmentsFlag]
+					agentOptions.materialType = options[kMaterialTypeFlag]
 						
-					#for timer in sorted(Timer.names()):
-					#	print "%s: %f" % (timer, Timer.elapsed(timer))
-					
-					Progress.setTitle("Garbage Collecting")
-					del simManager
+					mayaSim = MayaSim.MayaSim()
+					mayaSim.build(sim,
+								  options[kAnimTypeFlag],
+								  options[kFrameStepFlag],
+								  options[kCacheGeometryFlag],
+								  options[kCacheDirFlag],
+								  options[kDeleteSkeletonFlag],
+								  agentOptions)
+					del mayaSim
+					del sim
 					del scene
 					
 					gc.collect()
-					Progress.setProgress( maxRange )
 				finally:
 					mc.undoInfo( state=undoQueue )
-					Progress.stop()
-					Timer.deleteAll()
-			except npy.Errors.AbortError:
+			except ns.py.Errors.AbortError:
 				self.displayError("Import cancelled by user")
 			except:
 				raise

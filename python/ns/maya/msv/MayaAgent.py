@@ -29,68 +29,35 @@ from maya.OpenMaya import *
 import maya.cmds as mc
 import maya.mel as mel
 
-import ns.py.Timer as Timer
-
-import ns.bridge.data.AgentDescription as AgentDescription
-import ns.bridge.data.SimManager as SimManager
+import ns.bridge.data.AgentSpec as AgentSpec
 import ns.bridge.data.Agent as Agent
+import ns.maya.msv.MayaSkin as MayaSkin
+import ns.maya.msv.MayaUtil as MayaUtil
 
 _animatable = ('rx', 'ry', 'rz', 'tx', 'ty', 'tz')
 _rotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz', 4], ['zyx', 5]])	
 _masterSegments = {}
 
-def getDescendentShapes( name ):
-	descendents = mc.listRelatives( name, allDescendents=True, fullPath=True )
-	shapes = []
-	if descendents:
-		shapes = [ shape for shape in descendents if mc.objectType( shape, isAType="shape" ) ]	
-	return shapes
 
-def setMultiAttr( multiAttr, values, childAttr="" ):
-	# Python allows a maximum of 255 arguments to a function/method call
-	# so the maximum number of values we can process in a single setAttr
-	# is 254 (255 minus 1 for the attribute name)
-	chunkSize = min( 254, len(values) )
-	if childAttr:
-		childAttr = ".%s" % childAttr
-	for chunk in range( 0, len(values), chunkSize ):
-		# The last chunk may be smaller than chunkSize
-		#
-		curChunkSize = min( chunkSize, len(values) - chunk )
-		
-		stringValues = [ str(value) for value in values[chunk:chunk+curChunkSize] ]
-		valString = ", ".join(stringValues)
-		attr = "%s[%d:%d]%s" % (multiAttr, chunk, (chunk+curChunkSize-1), childAttr)
-		eval('mc.setAttr( "%s", %s )' % (attr, valString))
-		
-		
-def setMatrixAttr( matrixAttr, matrix ):
-	'''Set a matrix attribute. This is always tricky because usually the matrix
-	   data is stored in some sort of array structure, but Maya requires it to
-	   be set as a comma-delimted list of values. Further complicated by the
-	   fact that I haven't been able to get this to work using mc.setAttr(), so
-	   have to fall back on calling the MEL setAttr command'''
-	stringMatrix = [ str(value) for value in matrix ]
-	arg = " ".join(stringMatrix)
-	mel.eval('setAttr "%s" -type "matrix" %s' % (matrixAttr, arg))
-	
-def setDouble3Attr( double3Aattr, double3 ):
-	'''Set a double3 attribute.'''
-	stringDouble3 = [ str(value) for value in double3 ]
-	arg = " ".join(stringDouble3)
-	mel.eval('setAttr "%s" -type "double3" %s' % (double3Aattr, arg))
-
-	
-def hsvToRgb( hsv ):
-	return mel.eval( 'hsv_to_rgb <<%f, %f, %f>>' % (hsv[0], hsv[1], hsv[2]) )
-
-def rgbToHsv( rgb ):
-	return mel.eval( 'rgb_to_hsv <<%f, %f, %f>>' % (rgb[0], rgb[1], rgb[2]) )
+class Options:
+	def __init__(self):
+		self.loadGeometry = True
+		self.loadPrimitives = False
+		self.loadMaterials = True
+		self.skinType = MayaSkin.eSkinType.smooth
+		self.instancePrimitives = True
+		self.materialType = "blinn"
 
 class MayaMaterial:
-	def __init__(self, agent, material):
+	def __init__(self,
+				 agent,
+				 mayaFactory,
+				 material,
+				 materialType):
 		self._agent = agent
-		self._msvMaterial = material
+		self._factory = mayaFactory
+		self._material = material
+		self.materialType = materialType
 		self.sgName = ""
 		self.colorMap = material.rawColorMap
 		self.specular = [ 0.0, 0.0, 0.0 ]
@@ -111,111 +78,60 @@ class MayaMaterial:
 			else:
 				color[i] = msvColor[i]
 		if msvColorSpace != "rgb":
-			color = hsvToRgb( color )
+			color = MayaUtil.hsvToRgb( color )
 		return color
 		
 	def id(self):
-		return self._msvMaterial.id
+		return self._material.id
 	
 	def name(self):
-		if self.colorMap != self._msvMaterial.rawColorMap:
+		if self.colorMap != self._material.rawColorMap:
 			basename = os.path.basename(self.colorMap)
 			return os.path.splitext(basename)[0]
-		elif self._msvMaterial.name:
-			return self._msvMaterial.name
+		elif self._material.name:
+			return self._material.name
 		else:
-			return "%s%d" % (self._agent.simManager().materialType, self.id())
+			return "%s%d" % (self._materialType, self.id())
 		
 	def build(self):
 		self.colorMap = self._agent.replaceEmbeddedVariables( self.colorMap )
 		
-		self.specular = self._resolveColor( self._msvMaterial.specular,
-											self._msvMaterial.specularVar,
-											self._msvMaterial.specularSpace )
-		self.ambient = self._resolveColor( self._msvMaterial.ambient,
-											self._msvMaterial.ambientVar,
-											self._msvMaterial.ambientSpace )
+		self.specular = self._resolveColor( self._material.specular,
+											self._material.specularVar,
+											self._material.specularSpace )
+		self.ambient = self._resolveColor( self._material.ambient,
+											self._material.ambientVar,
+											self._material.ambientSpace )
 		# The V component Massive diffuse HSV color is represented as the
 		# single 'diffuse' attribute in Maya.
 		#
-		diffuse = self._resolveColor( self._msvMaterial.diffuse,
-									  self._msvMaterial.diffuseVar,
-									  self._msvMaterial.diffuseSpace )
-		diffuse = rgbToHsv( diffuse )
+		diffuse = self._resolveColor( self._material.diffuse,
+									  self._material.diffuseVar,
+									  self._material.diffuseSpace )
+		diffuse = MayaUtil.rgbToHsv( diffuse )
 		self.diffuse = diffuse[2]
 		
-		if self._msvMaterial.roughnessVar:
+		if self._material.roughnessVar:
 			# For now only the color map is allowed to vary. If a variable is
 			# present elsewhere its default value will be used
 			#
-			self.roughness = self._agent.variableValue( self._msvMaterial.roughnessVar,
+			self.roughness = self._agent.variableValue( self._material.roughnessVar,
 														asInt=False,
 														varies=False )
 		else:
-			self.roughness = self._msvMaterial.roughness
+			self.roughness = self._material.roughness
 		
 		#print "map: %s" % `self.colorMap`
 		#print "specular: %s" % `self.specular`
 		#print "ambient: %s" % `self.ambient`
 		#print "diffuse: %s" % `self.diffuse`
 		
-		self.sgName = self._agent.mayaScene.buildMaterial( self )		
-
-class MayaSkin:
-	def __init__(self, group, name, parent=""):
-		self.groupName = group
-		self._shapeName = ""
-		self.chunks = {}
-		
-		if "|" == parent:
-			# Parent to world
-			[self.groupName] = mc.parent( self.groupName, world=True )
-		elif "" != parent:
-			# Parent to 'parent'
-			[self.groupName] = mc.parent( self.groupName, parent, relative=True )
-		# Try and set the name - if there's a name clash the actual
-		# name may differ from 'name'. Store the actual name.
-		self.groupName = mc.rename( self.groupName, name )
-		[self.groupName] = mc.ls(self.groupName, long=True)
-		# Find an store the shape name
-		shapes = getDescendentShapes( self.groupName )
-		if shapes:
-			self._shapeName = shapes[0][len(self.groupName) + 1:]
-	
-	def addChunk(self, deformer, chunk):
-		'''Strip out the group name from the chunk path. This assumes
-		   that the chunk is a child of the group - which it should be'''
-		self.chunks[deformer] = chunk[len(self.groupName) + 1:]
-
-	def bindChunks(self, mayaAgent):
-		if not self.chunks:
-			print >> sys.stderr, "Warning: %s can not be bound because I was unable to chop it up into pieces." % geometry.name()
-			return False
-		
-		for deformer in self.chunks.keys():
-			# Chunks are stored with just the portion of the path below
-			# the group - chunkName builds the full path
-			#
-			chunk = self.chunks[deformer]
-			chunk = mc.parent( self.chunkName(chunk), mayaAgent.joint(deformer).name )
-			[ chunk ] = mc.ls( chunk, long=True )
-			self.chunks[deformer] = chunk
-		return True
-			
-
-	def chunkName(self, chunk):
-		if "|" == chunk[0] :
-			return chunk
-		else:
-			return "%s|%s" % (self.groupName, chunk)
-
-	def shapeName(self):
-		return "%s|%s" % (self.groupName, self._shapeName)
+		self.sgName = self._factory.buildMaterial(self)		
 
 class MayaGeometry:
-	def __init__(self, agent, geometry):
-		self.agent = agent
-		self.msvGeometry = geometry
+	def __init__(self, mayaAgent, geometry):
+		self.mayaAgent = mayaAgent
+		self.geometry = geometry
 		self.skin = None
 	
 	def name( self ):
@@ -234,22 +150,22 @@ class MayaGeometry:
 		self.skin.groupName = name
 	
 	def attached( self ):
-		return bool(self.msvGeometry.attach)
+		return bool(self.geometry.attach)
 	
 	def skinnable( self ):
 		return not self.attached() and self.weights()
 	
 	def deformers( self ):
-		return self.msvGeometry.deformers()
+		return self.geometry.deformers()
 
 	def weights( self ):
-		return self.msvGeometry.weights()
+		return self.geometry.weights()
 	
 	def file( self ):
-		return self.msvGeometry.file
+		return self.geometry.file
 	
-	def build( self ):
-		if not self.msvGeometry.file:
+	def build(self, skinType, loadMaterials, materialType):
+		if not self.geometry.file:
 			# it is perfectly legal to have non-geometry:
 			# a geometry node with no obj file. Massive just
 			# doesn't display anything
@@ -259,21 +175,25 @@ class MayaGeometry:
 		# TODO: returnNewNodes is a relatively new flag (8.0? 8.5?) need something
 		#		if this is to work with 7.0
 		# TODO: maybe use namespaces? Or a better renaming prefix?
-		if self.agent:
-			self.agent.importGeometry( self, self.msvGeometry.name )
+		if self.mayaAgent:
+			self.mayaAgent.importGeometry(self, self.geometry.name, skinType)
 			if self.attached():
-				[name] = mc.parent( self.name(), self.agent.joint(self.msvGeometry.attach).name )
+				[name] = mc.parent(self.name(),
+								   self.mayaAgent.mayaJoint(self.geometry.attach).name )
 				[name] = mc.ls( name, long=True )
 				self.setName( name )
-			if self.agent.simManager().loadMaterials:
-				mc.sets( self.name(), edit=True, forceElement=self.agent.material(self.msvGeometry.material).sgName )
-			elif SimManager.eSkinType.instance == self.agent.simManager().skinType:
+			if loadMaterials:
+				material = self.mayaAgent.material(self.geometry.material, materialType)
+				mc.sets(self.name(),
+						edit=True,
+						forceElement=material.sgName)
+			elif MayaSkin.eSkinType.instance == skinType:
 				# When using chunk skinning with instances the newly
 				# instanced chunks won't have any shading connections,
 				# assign some now
 				#
 				mc.sets( self.name(), edit=True, forceElement="initialShadingGroup" )
-			self.agent.registerGeometry( self )
+			self.mayaAgent.registerGeometry(self, skinType)
 
 class MayaAction:
 	def __init__(self, agent, msvAction):
@@ -288,7 +208,7 @@ class MayaAction:
  				object = self._agent.skelGroup
  				attr = tokens[0]
  			else:
-  			 	object = self._agent.joint(tokens[0]).name
+  			 	object = self._agent.mayaJoint(tokens[0]).name
   			 	attr = tokens[1]
 
  			if not attr in _animatable:
@@ -311,17 +231,17 @@ class MayaPrimitive:
 	def __init__(self, msvPrimitive, mayaJoint):
 		self._msvPrimitive = msvPrimitive
 		self.mayaJoint = mayaJoint
-		self.baseName = (mayaJoint.msvJoint().name + "Segment")
+		self.baseName = (mayaJoint.joint().name + "Segment")
 		self.name = ""
 		
 	def create( cls, msvPrimitive, mayaJoint ):
-		if isinstance( msvPrimitive, AgentDescription.Tube ):
+		if isinstance( msvPrimitive, AgentSpec.Tube ):
 			return MayaTube( msvPrimitive, mayaJoint )
-		elif isinstance( msvPrimitive, AgentDescription.Sphere ):
+		elif isinstance( msvPrimitive, AgentSpec.Sphere ):
 			return MayaSphere( msvPrimitive, mayaJoint )
-		elif isinstance( msvPrimitive, AgentDescription.Box ):
+		elif isinstance( msvPrimitive, AgentSpec.Box ):
 			return MayaBox( msvPrimitive, mayaJoint )
-		elif isinstance( msvPrimitive, AgentDescription.Disc ):
+		elif isinstance( msvPrimitive, AgentSpec.Disc ):
 			return MayaDisc( msvPrimitive, mayaJoint )
 	create = classmethod(create)	
 		
@@ -382,15 +302,16 @@ class MayaDisc(MayaPrimitive):
 		MayaPrimitive.build(self)
 
 class MayaJoint:
- 	def __init__(self, agent, msvJoint):
+ 	def __init__(self, agent, joint, factory):
  		self.agent = agent
- 		self._msvJoint = msvJoint
+ 		self._joint = joint
+ 		self._factory = factory
  		self.primitive = None
  		self.name = ""
  		self.channelOffsets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
- 	def msvJoint( self ):
- 		return self._msvJoint
+ 	def joint( self ):
+ 		return self._joint
  	
  	def primitiveName( self ):
  		if self.primitive:
@@ -399,10 +320,10 @@ class MayaJoint:
  			return ""
 
  	def isChannelFree( self, channel ):
- 		return self._msvJoint.dof[channel]
+ 		return self._joint.dof[channel]
 
  	def rotateOrderString( self, reversed ):
- 		order = self._msvJoint.order
+ 		order = self._joint.order
  		rotateOrder = ""
  		indices = []
  		if reversed:
@@ -410,38 +331,38 @@ class MayaJoint:
  		else:
  			indices = range(len(order))
  		for i in indices:
- 			if AgentDescription.kRX == order[i]:
+ 			if AgentSpec.kRX == order[i]:
  				rotateOrder += "x"
- 			elif AgentDescription.kRY == order[i]:
+ 			elif AgentSpec.kRY == order[i]:
  				rotateOrder += "y"
- 			elif AgentDescription.kRZ == order[i]:
+ 			elif AgentSpec.kRZ == order[i]:
  				rotateOrder += "z"
  		return rotateOrder
 
  	def scale(self):
-		if self._msvJoint.scaleVar:
-			val = self.agent.variableValue(self._msvJoint.scaleVar, False)
+		if self._joint.scaleVar:
+			val = self.agent.variableValue(self._joint.scaleVar, False)
 			mc.scale( val, val, val, self.name )
 			
 	def setChannelOffsets(self):
 		'''Treat the current translate values as the base translation. Any
 		   translate animation applied will be relative to these values.'''
 		[baseTranslate] = mc.getAttr("%s.translate" % self.name)
-		self.channelOffsets[AgentDescription.channel2Enum["tx"]] = baseTranslate[0]
- 		self.channelOffsets[AgentDescription.channel2Enum["ty"]] = baseTranslate[1]
- 		self.channelOffsets[AgentDescription.channel2Enum["tz"]] = baseTranslate[2]
+		self.channelOffsets[AgentSpec.channel2Enum["tx"]] = baseTranslate[0]
+ 		self.channelOffsets[AgentSpec.channel2Enum["ty"]] = baseTranslate[1]
+ 		self.channelOffsets[AgentSpec.channel2Enum["tz"]] = baseTranslate[2]
  	 	
  	def build(self):
- 		self.name = mc.createNode("joint", name=self._msvJoint.name)
+ 		self.name = mc.createNode("joint", name=self._joint.name)
  
   		mc.setAttr((self.name + ".rotateOrder"), _rotateOrder2Enum[self.rotateOrderString(False)])
  
- 		if self._msvJoint.translate:
-			mc.move( self._msvJoint.translate[0], self._msvJoint.translate[1], self._msvJoint.translate[2],
+ 		if self._joint.translate:
+			mc.move( self._joint.translate[0], self._joint.translate[1], self._joint.translate[2],
 					 self.name, objectSpace=True, relative=True )
 		
-		if self._msvJoint.transform:
-			mc.xform( self.name, matrix=self._msvJoint.transform, objectSpace=True, relative=True)
+		if self._joint.transform:
+			mc.xform( self.name, matrix=self._joint.transform, objectSpace=True, relative=True)
 			
  		# Use the 'joint' command to set the rotation degrees of freedom.
 		# However since joints don't have a built-in concept of translation
@@ -455,8 +376,8 @@ class MayaJoint:
 			#lock = not bool(dof[tdof])
 			#mc.setAttr( joint + '.' + tdof, lock=lock )
  	
- 		if self._msvJoint.parent:
- 			[self.name] = mc.parent(self.name, self.agent.joint(self._msvJoint.parent).name, relative=True)
+ 		if self._joint.parent:
+ 			[self.name] = mc.parent(self.name, self.agent.mayaJoint(self._joint.parent).name, relative=True)
  			[self.name] = mc.ls(self.name, long=True)
   	
 		# Need to zero out the transform so that actions are applied correctly.
@@ -470,17 +391,17 @@ class MayaJoint:
 		if not self.agent.rootJoint:
 			self.agent.registerRootJoint( self )
 			
-	def buildPrimitive( self ):
-		self.primitive = MayaPrimitive.create( self._msvJoint.primitive, self )
-		self.agent.mayaScene.buildPrimitive( self.primitive )
+	def buildPrimitive(self, instance):
+		self.primitive = MayaPrimitive.create( self._joint.primitive, self )
+		self._factory.buildPrimitive(self.primitive, instance)
 
 		# Primitives are created after freezing transforms on the agent group
 		# To make sure they are also scaled up by the agent heigh, manually
 		# scale them here. For skinning reasons, the individual joint scales
 		# are applied later, so we don't have to account for them here.
 		#
-		if self.agent.agentDesc().scaleVar:
-			val = self.agent.variableValue( self.agent.agentDesc().scaleVar, False )
+		if self.agent.agentSpec().scaleVar:
+			val = self.agent.variableValue( self.agent.agentSpec().scaleVar, False )
 			mc.scale( val, val, val, self.primitive.name )
 
 		[ self.primitive.name ] = mc.parent(self.primitive.name, self.name, relative=True)
@@ -526,13 +447,14 @@ def showLayers():
 
 # Node definition
 class MayaAgent:
-	def __init__(self, msvAgent):
+	def __init__(self, agent, mayaFactory):
 		self.reset()
-		self._msvAgent = msvAgent
+		self._agent = agent
+		self._factory = mayaFactory
 	
 	def reset(self):
-		self.mayaScene = None
-		self._msvAgent = None
+		self._factory = None
+		self._agent = None
 		self._agentGroup = ""
 		self.skelGroup = ""
 		self.rootJoint = None
@@ -543,78 +465,78 @@ class MayaAgent:
 		self._bindPose = ""
 		self.characterSet = ""
 
-		self.joints = {}
+		self.mayaJoints = {}
 		self.actions = {}
 
 	def name( self ):
-		return self._msvAgent.name
-
-	def simManager( self ):
-		return self.mayaScene.simManager
+		return self._agent.name
 	
-	def agentDesc( self ):
-		return self._msvAgent.agentDesc
+	def agentSpec( self ):
+		return self._agent.agentSpec
 	
-	def sim( self ):
-		return self._msvAgent.sim()
-
 	def agentType( self ):
-		return self.agentDesc().agentType
+		return self.agentSpec().agentType
+	
+	def id(self):
+		return self._agent.id
 
 	def variableValue( self, variableName, asInt=False, varies=True ):
-		return self._msvAgent.variableValue( variableName, asInt, varies )
+		return self._agent.variableValue( variableName, asInt, varies )
 
 	def replaceEmbeddedVariables( self, s ):
-		return self._msvAgent.replaceEmbeddedVariables( s )
+		return self._agent.replaceEmbeddedVariables( s )
 
-	def importGeometry( self, mayaGeometry, groupName ):
-		return self.mayaScene.importGeometry( mayaGeometry, groupName )
+	def importGeometry(self, mayaGeometry, groupName, skinType):
+		return self._factory.importGeometry(mayaGeometry, groupName, skinType)
 
-	def joint( self, msvJoint ):
-		return self.joints[ msvJoint ]
+	def mayaJoint( self, mayaJointName ):
+		return self.mayaJoints[ mayaJointName ]
 	
-	def material( self, id ):
+	def material(self, id, materialType):
 		'''Return the MayaMaterial with the given ID. Create the MayaMaterial
 		   from the Massive Material if needed. This guarantees that we only
 		   create materials for geometry that is actually used.'''
 		if id >= len(self.materialData):
 			self.materialData.extend( [None] * ((id + 1) - len(self.materialData)) )
 		if not self.materialData[id]:
-			mayaMaterial = MayaMaterial( self, self.agentDesc().materialData[id]  )
+			mayaMaterial = MayaMaterial(self,
+										self._factory,
+										self.agentSpec().materialData[id],
+										materialType)
 			self.materialData[id] = mayaMaterial
 			mayaMaterial.build()
 
 		return self.materialData[id]
 	
-	def getAgentGroup( self ):
+	def agentGroup( self ):
 		if not self._agentGroup:
-			self._agentGroup = mc.group( empty=True, name=self.name() )
-			if self.agentDesc().scaleVar:
-				val = self.variableValue( self.agentDesc().scaleVar, False )
-				mc.scale( val, val, val, self._agentGroup )
+			self._agentGroup = mc.group(empty=True, name=self.name())
+			if self.agentSpec().scaleVar:
+				val = self.variableValue(self.agentSpec().scaleVar, False)
+				mc.scale(val, val, val, self._agentGroup)
 			self._agentGroup = '|%s' % self._agentGroup
 		return self._agentGroup
 
 	def registerPrimitive( self, primitive ):
 		self.primitiveData.append(primitive)
 	
-	def registerGeometry( self, geometry ):
-		self.geometryData.append(geometry)
+	def registerGeometry(self, mayaGeometry, skinType):
+		self.geometryData.append(mayaGeometry)
 		# if the geometry is attached it will already be parented to a
 		# joint. And if we are chunk skinning using instances the geometry
 		# should stay under the master group.
 		#
-		if not geometry.attached() and \
-		   SimManager.eSkinType.instance != self.simManager().skinType:
-			[name] = mc.parent(geometry.name(), self.getAgentGroup(), relative=True)
+		if (not mayaGeometry.attached() and
+			MayaSkin.eSkinType.instance != skinType):
+			[name] = mc.parent(mayaGeometry.name(), self.agentGroup(), relative=True)
  			[name] = mc.ls(name, long=True)
- 			geometry.setName(name)
+ 			mayaGeometry.setName(name)
  	
 	def registerRootJoint( self, rootJoint ):
 		assert not self.skelGroup
 		self.rootJoint = rootJoint
-		self.skelGroup = mc.group(self.rootJoint.name, name=self.name(), parent=self.getAgentGroup(), relative=True)
-		self.skelGroup = "%s|%s" % (self.getAgentGroup(), self.skelGroup)
+		self.skelGroup = mc.group(self.rootJoint.name, name=self.name(), parent=self.agentGroup(), relative=True)
+		self.skelGroup = "%s|%s" % (self.agentGroup(), self.skelGroup)
 		# Group was just created so self.rootJoint is guaranteed to be the
 		# only child
 		#
@@ -632,88 +554,90 @@ class MayaAgent:
 		for primitive in self.primitiveData:
 			mc.editDisplayLayerMembers( getPrimitiveLayer(), primitive.name )
 
-	def applyActions(self):
+	def _applyActions(self):
  		# The rotation order needed to build the skeleton does not apply
  		# to the animation - it is assumed to be xyz
  		#
- 		for joint in self.joints.values():
- 			mc.setAttr("%s.rotateOrder" % joint.name, _rotateOrder2Enum['xyz'])
+ 		for mayaJoint in self.mayaJoints.values():
+ 			mc.setAttr("%s.rotateOrder" % mayaJoint.name, _rotateOrder2Enum['xyz'])
 
-		for msvAction in self.agentDesc().actions.values():
+		for msvAction in self.agentSpec().actions.values():
  	 		mc.dagPose(self._zeroPose, restore=True)
  	 		mayaAction = MayaAction( self, msvAction )
  	 		self.actions[msvAction.name] = mayaAction
  	 		mayaAction.build()
 
- 	def scaleJoints(self):
- 		for joint in self.joints.values():
- 			joint.scale()
+ 	def _scaleJoints(self):
+ 		for mayaJoint in self.mayaJoints.values():
+ 			mayaJoint.scale()
  			
-  	def freezeAgentScale(self):
+  	def _freezeAgentScale(self):
   		'''Make sure the agent scale doesn't also scale the translate values of
 		   the sim data. We have to freeze the transform here since we won't
 		   be allowed to after binding the skin'''
 	
 	  	# Freezing the root node's transform may update the translate values
-	  	# of any/all joints in the skeleton, store those new translations as
+	  	# of any/all mayaJoints in the skeleton, store those new translations as
 	  	# the base values.
 	  	#
-  		mc.makeIdentity( self.getAgentGroup(), apply=True, translate=True, rotate=True, scale=True, normal=0 )
- 		for joint in self.joints.values():
- 			joint.setChannelOffsets()
+  		mc.makeIdentity(self.agentGroup(), apply=True,
+						translate=True, rotate=True, scale=True,
+						normal=0)
+ 		for mayaJoint in self.mayaJoints.values():
+ 			mayaJoint.setChannelOffsets()
 
-  		
- 	def buildCharacterSet(self):
- 		setMembers = [ "%s.%s" % (joint.name, attr) for joint in self.joints.values() for attr in _animatable ]
+ 	def _buildCharacterSet(self):
+ 		setMembers = [ "%s.%s" % (mayaJoint.name, attr) for mayaJoint in self.mayaJoints.values() for attr in _animatable ]
  		self.characterSet = mc.character(setMembers, name=("%sCharacter" % self.name()))
  
-	def buildSkeleton(self):
-		for msvJoint in self.agentDesc().jointData:
-			if not msvJoint:
+	def _buildSkeleton(self):
+		for joint in self.agentSpec().jointData:
+			if not joint:
 				# some ids may not be used (e.g. 0)
 				continue
-			mayaJoint = MayaJoint( self, msvJoint )
-			self.joints[msvJoint.name] = mayaJoint
+			
+			mayaJoint = MayaJoint(self, joint, self._factory)
+			self.mayaJoints[joint.name] = mayaJoint
 			mayaJoint.build()
 			
-	def buildPrimitives(self):
-		for joint in self.joints.values():
-			joint.buildPrimitive()
+	def _buildPrimitives(self, instance):
+		for mayaJoint in self.mayaJoints.values():
+			mayaJoint.buildPrimitive(instance)
 					
-	def buildGeometry( self ):
-		for msvGeometry in AgentDescription.GeoIter( self.agentDesc().geoDB, self ):
-			if not msvGeometry:
+	def _buildGeometry(self, skinType, loadMaterials, materialType):
+		for geometry in AgentSpec.GeoIter( self.agentSpec().geoDB, self ):
+			if not geometry:
 				# some ids may not be used (e.g. 0)
 				continue
-			mayaGeometry = MayaGeometry( self, msvGeometry )
-			mayaGeometry.build()
+			mayaGeometry = MayaGeometry(self, geometry)
+			mayaGeometry.build(skinType, loadMaterials, materialType)
  
-  	def setBindPose( self ):
+  	def _setBindPose( self ):
  		# The bind pose is stored in frame 1
- 		if not self.agentDesc().bindPoseData:
+ 		if not self.agentSpec().bindPoseData:
  			return
  	
- 		for jointSim in self.agentDesc().bindPoseData.joints():
- 			mayaJoint = self.joint( jointSim.name() )
+ 		for jointSim in self.agentSpec().bindPoseData.joints():
+ 			mayaJoint = self.mayaJoint(jointSim.name())
  			
  	 		# AMC describes object space transformations
  			#
- 			mc.move( jointSim.sample("tx", jointSim.startFrame()),
-					 jointSim.sample("ty", jointSim.startFrame()),
-					 jointSim.sample("tz", jointSim.startFrame()),
-					 mayaJoint.name, objectSpace=True, relative=True )
- 			mc.xform( mayaJoint.name,
-					  rotation=( jointSim.sample("rx", jointSim.startFrame()),
-								 jointSim.sample("ry", jointSim.startFrame()),
-								 jointSim.sample("rz", jointSim.startFrame())),
-					  objectSpace=True, relative=True)
+ 			mc.move(jointSim.sample("tx", jointSim.startFrame()),
+					jointSim.sample("ty", jointSim.startFrame()),
+					jointSim.sample("tz", jointSim.startFrame()),
+					mayaJoint.name, objectSpace=True, relative=True )
+ 			mc.xform(mayaJoint.name,
+					 rotation=(jointSim.sample("rx", jointSim.startFrame()),
+							   jointSim.sample("ry", jointSim.startFrame()),
+							   jointSim.sample("rz", jointSim.startFrame())),
+					 objectSpace=True, relative=True)
  		
  		self._bindPose = mc.dagPose(self.rootJoint.name, save=True, bindPose=True, name=(self.name() + "Bind"))
 
- 	def _createSkinCluster( self, geometry ):
+ 	def _createSkinCluster(self, geometry):
  		[ shape ] = mc.listRelatives(geometry.name(), type='shape', fullPath=True, allDescendents=True)
 		
-		deformers = [ self.joint(deformer).name for deformer in geometry.deformers() ]
+		deformers = [ self.mayaJoint(deformer).name for deformer in geometry.deformers() ]
 					
 		[cluster] = mc.deformer( geometry.name(), type="skinCluster" )
 		
@@ -721,7 +645,7 @@ class MayaAgent:
 		# worldMatrix[0] assumes the geometry is not instanced.
 		#
 		wm = mc.getAttr( "%s.worldMatrix[0]" % geometry.name() )
-		setMatrixAttr( "%s.geomMatrix" % cluster, wm )
+		MayaUtil.setMatrixAttr( "%s.geomMatrix" % cluster, wm )
 		
 		for i in range(len(deformers)):
 			if not mc.ls( "%s.lockInfluenceWeights" % deformers[i] ):
@@ -733,169 +657,60 @@ class MayaAgent:
 			# worldInverseMatrix[0] assumes the joint is not instanced
 			#
 			wim = mc.getAttr( "%s.worldInverseMatrix[0]" % deformers[i] )
-			setMatrixAttr( "%s.bindPreMatrix[%d]" % (cluster, i), wim )
+			MayaUtil.setMatrixAttr( "%s.bindPreMatrix[%d]" % (cluster, i), wim )
 		
-		self.mayaScene.setClusterWeights( geometry, cluster )
+		self._factory.setClusterWeights( geometry, cluster )
 		
-	def bindSkin( self ):
-		for geometry in self.geometryData:
-			if not geometry:
+	def _bindSkin(self, skinType):
+		for mayaGeometry in self.geometryData:
+			if not mayaGeometry:
 				continue
-			if not geometry.skin:
+			if not mayaGeometry.skin:
 				continue
-			if geometry.attached():
+			if mayaGeometry.attached():
 				# Attached geometry is parented to a joint instead of being
 				# skinned.
 				#
 				continue
-			if not geometry.weights() or not geometry.deformers():
+			if not mayaGeometry.weights() or not mayaGeometry.deformers():
 				print >> sys.stderr, "Warning: %s has no skin weights and will not be bound." % geometry.name()
 				continue
 			
-			if SimManager.eSkinType.smooth == self.simManager().skinType:
-				self._createSkinCluster( geometry )
-			elif geometry.skin.bindChunks(self):
-				mc.delete(geometry.name())		
+			if MayaSkin.eSkinType.smooth == skinType:
+				self._createSkinCluster(mayaGeometry)
+			elif mayaGeometry.skin.bindChunks(self):
+				mc.delete(mayaGeometry.name())		
 		
-	def build( self, mayaScene ):
-		self.mayaScene = mayaScene
-
-		if self.simManager().loadSkeleton:
-			self.buildSkeleton()
+	def build(self, options):
+		self._buildSkeleton()
 		
-		if self.simManager().loadGeometry:
-			Timer.push("Build Geometry")
-			self.buildGeometry()
-			Timer.pop()
+		if options.loadGeometry:
+			self._buildGeometry(options.skinType,
+								options.loadMaterials,
+								options.materialType)
 		
 		# Make sure the agent scale doesn't also scale the translate values of
 		# the sim data. We have to freeze the transform here since we won't
 		# be allowed to after binding the skin
 		#
-		self.freezeAgentScale()
+		self._freezeAgentScale()
 		
-		if self.simManager().loadPrimitives:
-			Timer.push("Build Primitives")
-			self.buildPrimitives()
-			Timer.pop()
+		if options.loadPrimitives:
+			self._buildPrimitives(options.instancePrimitives)
 					
-		if self.simManager().loadSkin:
-			Timer.push("Bind Skin")
-			
-			self.setBindPose()
-			self.bindSkin()
-			Timer.pop()
+		if options.loadGeometry:
+			self._setBindPose()
+			self._bindSkin(options.skinType)
 		
-		if self.simManager().loadSkeleton:
-			# Has to happen after skin is bound
-			self.scaleJoints()
-			self._zeroPose = mc.dagPose(self.rootJoint.name, save=True, name=(self.name() + "Zero"))
+		# Has to happen after skin is bound
+		self._scaleJoints()
+		self._zeroPose = mc.dagPose(self.rootJoint.name, save=True, name=(self.name() + "Zero"))
 			
-		if self.simManager().loadActions:
-			self.buildCharacterSet()
-			self.applyActions()
-		
-		if self._zeroPose:
-			mc.dagPose( self._zeroPose, restore=True )
-			
-	def loadSim( self, animType ):
-		'''Load the simulation data for this MayaAgent. It will either be
-		   loaded as anim curves or through the msvSimLoader node.'''
-		if SimManager.eAnimType.curves == animType:
-			#==================================================================
-			# Create Anim Curves
-			#==================================================================
-			sim = self.sim()
-	
-			for jointSim in sim.joints():
-		 		mayaJoint = self.joint( jointSim.name() )
-	
-		 		for channelName in jointSim.channelNames():
-		 			channelEnum = AgentDescription.channel2Enum[channelName]
-		 			if mayaJoint.isChannelFree( channelEnum ):
-						Timer.push("Setting Keyframe")
-						times = range( jointSim.startFrame(),
-									   jointSim.startFrame() + jointSim.numFrames(),
-									   self.simManager().frameStep )
-		  				mc.setKeyframe( mayaJoint.name, attribute=channelName,
-										inTangentType="linear", outTangentType="linear",
-										time=times, value=0.0 )
-		 				[ animCurve ] = mc.listConnections( "%s.%s" % (mayaJoint.name, channelName), source=True )
-		 				
-		 				offset = mayaJoint.channelOffsets[channelEnum]
-		 				channels = [ offset + jointSim.sample(channelName, i) for i in times ]
-		 				
-		 				setMultiAttr( "%s.ktv" % animCurve, channels, "kv" )
-		 				Timer.pop()
-		else:
-			#==================================================================
-			# Create msvSimLoader Nodes
-			#==================================================================
-			simDir = self.mayaScene.simManager.simDir()
-			simType = self.mayaScene.simManager.simType.strip('.')
-			agentType = self._msvAgent.agentDesc.agentType
-			instance = self._msvAgent.id
-			
-			simLoader = mc.createNode("msvSimLoader", name="msvSimLoader%d" % instance)
-			mc.setAttr( "%s.simDir" % simLoader, simDir, type="string" )
-			mc.setAttr( "%s.simType" % simLoader, simType, type="string" )
-			mc.setAttr( "%s.agentType" % simLoader, agentType, type="string" )
-			mc.setAttr( "%s.instance" % simLoader, instance )
-			mc.connectAttr( "time1.outTime", "%s.time" % simLoader )
-			
-			i = 0
-			for mayaJoint in self.joints.values():
-				msvJoint = mayaJoint.msvJoint()
-				mc.setAttr( "%s.joints[%d]" % (simLoader, i), msvJoint.name, type="string" )
-				
-				j = 0
-				numTranslateChannels = 0
-				# Use the joint's degrees-of-freedom and channel order to
-				# determine which channels are present and which
-				# transformations they correspond to
-				for channel in msvJoint.order:
-					if not msvJoint.dof[channel]:
-						continue
- 						
- 					src = ""
- 					offset = ""
-					if AgentDescription.isRotateEnum( channel ):
-						src = "%s.output[%d].rotate[%d]" % (simLoader, i, (j-numTranslateChannels))
-						offset = "%s.offsets[%d].rotateOffset[%d]" % (simLoader, i, (j-numTranslateChannels))
-					else:
-						src = "%s.output[%d].translate[%d]" % (simLoader, i, j)
-						offset = "%s.offsets[%d].translateOffset[%d]" % (simLoader, i, j)
-						numTranslateChannels += 1
-					dst = "%s.%s" % (mayaJoint.name, AgentDescription.enum2Channel[channel])
-
-					mc.setAttr( offset, mayaJoint.channelOffsets[channel] )
-					mc.connectAttr( src, dst )
-					j += 1
-				
-				i += 1
-			
-
-	def deleteSkeleton( self ):
-		intermediateShapes = []
-		attachedGeo = []
-		for geo in self.geometryData:
-			if not geo.skinnable():
-				if geo.attached():
-					attachedGeo.append(geo)
-				continue
-			history = mc.listHistory( geo.shapeName() )
-			for node in history:
-				if mc.objectType( node, isAType="shape" ):
-					if mc.getAttr( "%s.intermediateObject" % node ):
-						intermediateShapes.append( node )
-		mc.delete( self.skelGroup )
-		mc.delete( intermediateShapes )
-		self.skelGroup = ""
-		self.rootJoint = None
-		self.joints = {}
-		self.primitiveData = []
-		# Attached geometry has been deleted with the skeleton
+		#if self.simManager().loadActions:
+		#	self.buildCharacterSet()
+		#	self.applyActions()
 		#
-		for geo in attachedGeo:
-			self.geometryData.remove(geo)
-   
+		#if self._zeroPose:
+		#	mc.dagPose( self._zeroPose, restore=True )
+			
+

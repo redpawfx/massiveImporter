@@ -25,58 +25,67 @@
 import sys
 import os.path
 
-import ns.bridge.data.Sim as Sim
-import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.Agent as Agent
+import ns.bridge.data.SimData as SimData
 
-class AMCReader:
-	def __init__(self, fullName):
-		self.fullName = fullName
-		# AMC sim files are named: agentType.#.amc where agentType.# is
-		# the name of that particular agent instance
-		#
-		tokens = os.path.basename( fullName ).split(".")
-		self.agentName = AgentDescription.formatAgentName( tokens[0], tokens[1] )
-
-	def read(self, sim):
-		'''Load animation data from an AMC file, Returns a Sim object that
-		   stores some number of frames of animation data for a single agent'''
-	 
-	 	# Python 2.4 limitation: try... except: finally: doesn't work,
-	 	# have to nest try... except: in try... finally:
-		try:
-			agent = sim.agent( self.agentName )
-			if not agent:
+def read(amcFile, simData=None):
+	'''Load animation data from a .amc file and adds it to an SimData.Agent.
+	   The name of the SimData.Agent is gotten from the .amc file name.
+	   If a simData is provided, it will be queried to get SimData.Agent.
+	   If the specified SimData.Agent does not exist, the read will exit
+	   early. If no simData is provided a new SimData.Agent is created.
+	   In both cases the target SimData.Agent is returned (although if
+	   a SimData was provided it will also store the target SimData.Agent).
+	   For now amcFile must be a path to a .amc file (as opposed to an open
+	   file handle).'''
+ 
+ 	# AMC sim files are named: agentType.#.amc where agentType.# is
+	# the name of that particular agent instance
+	#
+	tokens = os.path.basename(amcFile).split(".")
+	agentName = Agent.formatAgentName(tokens[0], tokens[1])
+	
+ 	# Python 2.4 limitation: try... except: finally: doesn't work,
+ 	# have to nest try... except: in try... finally:
+	try:
+		if simData:
+			agentSim = simData.agent(agentName)
+			if not agentSim:
 				# Agent is not in one of the chosen "selections"
 				#
-				return
-			
-			path = os.path.dirname( self.fullName )
-			
-			try:
-				fileHandle = open(self.fullName, "r")
-				frame = 0
-				for line in fileHandle:
-					tokens = line.strip().split()
-					if tokens:
-						if tokens[0][0] == ":":
-							# file options
-							continue
-						elif len(tokens) == 1:
-							# sample number
-							frame = int(tokens[0])
-						else:
-							jointName = tokens[0]
+				return None
+		else:
+			agentSim = SimData.Agent(agentName)
+		
+		path = os.path.dirname(amcFile)
+		
+		fileHandle = open(amcFile, "r")
+		try:
+			frame = 0
+			for line in fileHandle:
+				tokens = line.strip().split()
+				if tokens:
+					if tokens[0][0] == ":":
+						# file options
+						continue
+					elif len(tokens) == 1:
+						# sample number
+						frame = int(tokens[0])
+					else:
+						jointName = tokens[0]
+ 					
+	 					data = []
+	 					for i in range(1, len(tokens)):
+	 						data.append(float(tokens[i]))
 	 					
-		 					data = []
-		 					for i in range(1, len(tokens)):
-		 						data.append(float(tokens[i]))
-		 					
-		 					agent.addSample( jointName, frame, data ) 
-		 	finally:
-				fileHandle.close()				
-		except:
-			print >> sys.stderr, "Error reading AMC file: %s" % self.fullName	
-			raise
+	 					agentSim.addSample(jointName, frame, data) 
+	 	finally:
+			fileHandle.close()				
+	except:
+		print >> sys.stderr, "Error reading AMC file: %s" % amcFile
+		raise
+	
+	return agentSim
 
 
 

@@ -31,10 +31,11 @@ from maya.OpenMayaMPx import *
 import ns.py as npy
 import ns.py.Errors
 
-import ns.bridge.data.Sim as Sim
+import ns.bridge.data.SimData as SimData
 import ns.bridge.io.SimReader as SimReader
 import ns.bridge.data.Selection as Selection
-import ns.bridge.data.AgentDescription as AgentDescription
+import ns.bridge.data.AgentSpec as AgentSpec
+import ns.bridge.data.Agent as Agent
 
 kName = "msvSimLoader"
 
@@ -99,14 +100,14 @@ class MsvSimLoader(MPxNode):
 				try:
 					sim = MsvSimLoader.sims[simDir]
 				except:
-					sim = Sim.Sim()
+					sim = SimData.SimData()
 					SimReader.read( simDir, simType, sim )
 					MsvSimLoader.sims[simDir] = sim
 				
 				#==============================================================
 				# Get the sim data for the target agent
 				#==============================================================
-				agentName = AgentDescription.formatAgentName( agentType, instance )
+				agentName = Agent.formatAgentName( agentType, instance )
 				agentSim = sim.agent(agentName)
 				if agentSim: 
 					#==========================================================
