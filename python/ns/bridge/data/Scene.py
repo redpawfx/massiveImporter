@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import sys
 import os
 import os.path
 
@@ -41,12 +42,15 @@ class Scene:
 		   directory.'''
 		resolved = path
 		if self._mas.rootPath() and not os.path.isabs(resolved):
-			resolved = "%s/%s" % (root, path)
+			resolved = "%s/%s" % (self._mas.rootPath(), path)
 		return resolved
 	
 	def baseName(self):
 		'''.mas file name without the extension.'''
 		return self._baseName
+	
+	def agentSpecs(self):
+		return self._agentSpecs.values()
 	
 	def mas(self):
 		return self._mas
@@ -59,8 +63,11 @@ class Scene:
 		self._mas = MasReader.read(masFile)
 		
 		for cdlFile in self._mas.cdlFiles:
-			path = self.resolvePath(cdlFile.file)
-			self.agentSpec(path, cdlFile.type)
+			self.addCdl(cdlFile.file, cdlFile.type)
+			
+	def addCdl(self, cdlFile, type=""):
+		path = self.resolvePath(cdlFile)
+		self.agentSpec(path, type)
 			
 	def agentSpec(self, key, type = ""):
 		'''Key is either an agent type or the absolute path to a CDL file.'''

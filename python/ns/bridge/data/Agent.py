@@ -47,9 +47,9 @@ class Agent:
 		self.id = -1
 		self.agentSpec = None
 		self.variableValues = {}
- 		self.placement = [ 1.0, 0.0, 0.0, 0.0, \
-						   0.0, 1.0, 0.0, 0.0, \
-						   0.0, 0.0, 1.0, 0.0, \
+ 		self.placement = [ 1.0, 0.0, 0.0, 0.0,
+						   0.0, 1.0, 0.0, 0.0,
+						   0.0, 0.0, 1.0, 0.0,
 						   0.0, 0.0, 0.0, 1.0 ]
  		self._simData = SimData.Agent("")
 

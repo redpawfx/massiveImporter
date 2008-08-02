@@ -127,7 +127,7 @@ def read(masFile):
  
 	mas = MasSpec.MasSpec()
 	if isinstance(masFile, basestring):
-		mas.masFile = masFile
+		mas.setMasFile(masFile)
 		fileHandle = open(masFile, "r")
 	else:
 		fileHandle = masFile

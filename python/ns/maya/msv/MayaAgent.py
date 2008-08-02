@@ -34,8 +34,7 @@ import ns.bridge.data.Agent as Agent
 import ns.maya.msv.MayaSkin as MayaSkin
 import ns.maya.msv.MayaUtil as MayaUtil
 
-_animatable = ('rx', 'ry', 'rz', 'tx', 'ty', 'tz')
-_rotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz', 4], ['zyx', 5]])	
+kRotateOrder2Enum = dict([['xyz', 0], ['yzx', 1], ['zxy', 2], ['xzy', 3], ['yxz', 4], ['zyx', 5]])
 _masterSegments = {}
 
 
@@ -65,21 +64,21 @@ class MayaMaterial:
 		self.diffuse = 0.8
 		self.roughness = 0.02
 	
-	def _resolveColor( self, msvColor, msvColorVar, msvColorSpace ):
-		color = [ 0.0, 0.0, 0.0 ]
+	def _resolveColor( self, color, colorVar, colorSpace ):
+		mayaColor = [ 0.0, 0.0, 0.0 ]
 		for i in range(3):
-			if msvColorVar[i]:
+			if colorVar[i]:
 				# For now only the color map is allowed to vary. If a variable is
 				# present elsewhere its default value will be used
 				#
-				color[i] = self._agent.variableValue( msvColorVar[i],
+				mayaColor[i] = self._agent.variableValue( colorVar[i],
 													  asInt=False,
 													  varies=False )
 			else:
-				color[i] = msvColor[i]
-		if msvColorSpace != "rgb":
-			color = MayaUtil.hsvToRgb( color )
-		return color
+				mayaColor[i] = color[i]
+		if colorSpace != "rgb":
+			mayaColor = MayaUtil.hsvToRgb( mayaColor )
+		return mayaColor
 		
 	def id(self):
 		return self._material.id
@@ -91,7 +90,7 @@ class MayaMaterial:
 		elif self._material.name:
 			return self._material.name
 		else:
-			return "%s%d" % (self._materialType, self.id())
+			return "%s%d" % (self.materialType, self.id())
 		
 	def build(self):
 		self.colorMap = self._agent.replaceEmbeddedVariables( self.colorMap )
@@ -176,7 +175,9 @@ class MayaGeometry:
 		#		if this is to work with 7.0
 		# TODO: maybe use namespaces? Or a better renaming prefix?
 		if self.mayaAgent:
+			print >> sys.stderr, "importing"
 			self.mayaAgent.importGeometry(self, self.geometry.name, skinType)
+			print >> sys.stderr, "done importing"
 			if self.attached():
 				[name] = mc.parent(self.name(),
 								   self.mayaAgent.mayaJoint(self.geometry.attach).name )
@@ -195,38 +196,7 @@ class MayaGeometry:
 				mc.sets( self.name(), edit=True, forceElement="initialShadingGroup" )
 			self.mayaAgent.registerGeometry(self, skinType)
 
-class MayaAction:
-	def __init__(self, agent, msvAction):
-		self._msvAction = msvAction
-		self._agent = agent
- 	
- 	def build( self ):
- 		for channel in self._msvAction.curves.keys():
- 			curve = self._msvAction.curves[channel]
- 			tokens = channel.split()
- 			if len(tokens) == 1:
- 				object = self._agent.skelGroup
- 				attr = tokens[0]
- 			else:
-  			 	object = self._agent.mayaJoint(tokens[0]).name
-  			 	attr = tokens[1]
 
- 			if not attr in _animatable:
- 		 		# TODO: figure out how to handle non rot/trans attrs
- 		 		continue
- 		 	if object == self._agent.skelGroup:
- 		 		# TODO: handle _agent animation... are these "agent curves"?
- 		 		continue
-
- 			baseValue = mc.getAttr("%s.%s" % (object, attr))
- 			for key in curve.points:
- 				mc.setKeyframe( object, attribute=attr,
-								inTangentType="linear", outTangentType="linear",
-								time=key[0] * self._msvAction.maxPoints, value=key[1] + baseValue)
- 			
- 		clip = mc.clip(self._agent.characterSet, startTime=0, endTime=self._msvAction.maxPoints, allRelative=True, scheduleClip=False)
- 		mc.clip(self._agent.characterSet, name=clip, newName=self._msvAction.name)
- 
 class MayaPrimitive:
 	def __init__(self, msvPrimitive, mayaJoint):
 		self._msvPrimitive = msvPrimitive
@@ -249,7 +219,7 @@ class MayaPrimitive:
 		# Not sure why, but it seems necessary to set the segment rotate order
 		# to the reverse of the joint rotate order
 		#
-		mc.setAttr((self.name + ".rotateOrder"), _rotateOrder2Enum[self.mayaJoint.rotateOrderString(True)])
+		mc.setAttr((self.name + ".rotateOrder"), kRotateOrder2Enum[self.mayaJoint.rotateOrderString(True)])
 
 		mc.setAttr((self.name + ".rotatePivot"), -self._msvPrimitive.centre[0], -self._msvPrimitive.centre[1], -self._msvPrimitive.centre[2])
 		mc.setAttr((self.name + ".scalePivot"), -self._msvPrimitive.centre[0], -self._msvPrimitive.centre[1], -self._msvPrimitive.centre[2])
@@ -355,7 +325,7 @@ class MayaJoint:
  	def build(self):
  		self.name = mc.createNode("joint", name=self._joint.name)
  
-  		mc.setAttr((self.name + ".rotateOrder"), _rotateOrder2Enum[self.rotateOrderString(False)])
+  		mc.setAttr((self.name + ".rotateOrder"), kRotateOrder2Enum[self.rotateOrderString(False)])
  
  		if self._joint.translate:
 			mc.move( self._joint.translate[0], self._joint.translate[1], self._joint.translate[2],
@@ -463,10 +433,7 @@ class MayaAgent:
 		self.primitiveData = []
 		self._zeroPose = ""
 		self._bindPose = ""
-		self.characterSet = ""
-
 		self.mayaJoints = {}
-		self.actions = {}
 
 	def name( self ):
 		return self._agent.name
@@ -526,11 +493,13 @@ class MayaAgent:
 		# joint. And if we are chunk skinning using instances the geometry
 		# should stay under the master group.
 		#
+		print >> sys.stderr, "registering geo"
 		if (not mayaGeometry.attached() and
 			MayaSkin.eSkinType.instance != skinType):
 			[name] = mc.parent(mayaGeometry.name(), self.agentGroup(), relative=True)
  			[name] = mc.ls(name, long=True)
  			mayaGeometry.setName(name)
+ 		print >> sys.stderr, "done registering geo"
  	
 	def registerRootJoint( self, rootJoint ):
 		assert not self.skelGroup
@@ -554,19 +523,6 @@ class MayaAgent:
 		for primitive in self.primitiveData:
 			mc.editDisplayLayerMembers( getPrimitiveLayer(), primitive.name )
 
-	def _applyActions(self):
- 		# The rotation order needed to build the skeleton does not apply
- 		# to the animation - it is assumed to be xyz
- 		#
- 		for mayaJoint in self.mayaJoints.values():
- 			mc.setAttr("%s.rotateOrder" % mayaJoint.name, _rotateOrder2Enum['xyz'])
-
-		for msvAction in self.agentSpec().actions.values():
- 	 		mc.dagPose(self._zeroPose, restore=True)
- 	 		mayaAction = MayaAction( self, msvAction )
- 	 		self.actions[msvAction.name] = mayaAction
- 	 		mayaAction.build()
-
  	def _scaleJoints(self):
  		for mayaJoint in self.mayaJoints.values():
  			mayaJoint.scale()
@@ -586,10 +542,6 @@ class MayaAgent:
  		for mayaJoint in self.mayaJoints.values():
  			mayaJoint.setChannelOffsets()
 
- 	def _buildCharacterSet(self):
- 		setMembers = [ "%s.%s" % (mayaJoint.name, attr) for mayaJoint in self.mayaJoints.values() for attr in _animatable ]
- 		self.characterSet = mc.character(setMembers, name=("%sCharacter" % self.name()))
- 
 	def _buildSkeleton(self):
 		for joint in self.agentSpec().jointData:
 			if not joint:
@@ -607,10 +559,13 @@ class MayaAgent:
 	def _buildGeometry(self, skinType, loadMaterials, materialType):
 		for geometry in AgentSpec.GeoIter( self.agentSpec().geoDB, self ):
 			if not geometry:
+				print >> sys.stderr, "skipping"
 				# some ids may not be used (e.g. 0)
 				continue
 			mayaGeometry = MayaGeometry(self, geometry)
+			print >> sys.stderr, "building"
 			mayaGeometry.build(skinType, loadMaterials, materialType)
+			print >> sys.stderr, "done building one geo"
  
   	def _setBindPose( self ):
  		# The bind pose is stored in frame 1
@@ -673,7 +628,7 @@ class MayaAgent:
 				#
 				continue
 			if not mayaGeometry.weights() or not mayaGeometry.deformers():
-				print >> sys.stderr, "Warning: %s has no skin weights and will not be bound." % geometry.name()
+				print >> sys.stderr, "Warning: %s has no skin weights and will not be bound." % mayaGeometry.name()
 				continue
 			
 			if MayaSkin.eSkinType.smooth == skinType:
@@ -685,9 +640,11 @@ class MayaAgent:
 		self._buildSkeleton()
 		
 		if options.loadGeometry:
+			print >> sys.stderr, "loading geometry"
 			self._buildGeometry(options.skinType,
 								options.loadMaterials,
 								options.materialType)
+			print >> sys.stderr, "done loading geometry"
 		
 		# Make sure the agent scale doesn't also scale the translate values of
 		# the sim data. We have to freeze the transform here since we won't
@@ -696,21 +653,18 @@ class MayaAgent:
 		self._freezeAgentScale()
 		
 		if options.loadPrimitives:
+			print >> sys.stderr, "loading primitives"
 			self._buildPrimitives(options.instancePrimitives)
+			print >> sys.stderr, "done loading primitives"
 					
 		if options.loadGeometry:
+			print >> sys.stderr, "binding skin"
 			self._setBindPose()
 			self._bindSkin(options.skinType)
+			print >> sys.stderr, "done binding skin"
 		
 		# Has to happen after skin is bound
 		self._scaleJoints()
 		self._zeroPose = mc.dagPose(self.rootJoint.name, save=True, name=(self.name() + "Zero"))
-			
-		#if self.simManager().loadActions:
-		#	self.buildCharacterSet()
-		#	self.applyActions()
-		#
-		#if self._zeroPose:
-		#	mc.dagPose( self._zeroPose, restore=True )
-			
+					
 

@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 import sys
+import os.path
 import gc
 
 import maya.OpenMaya as OpenMaya
@@ -30,50 +31,88 @@ import maya.cmds as mc
 import ns.py as npy
 import ns.py.Errors
 
-import ns.maya.msv as nmsv
-import ns.bridge.io.MasReader as MasReader
-import ns.maya.msv.MayaPlacement as MayaPlacement
-from ns.bridge.data.SimManager import MsvOpt
+import ns.maya.msv.MayaScene as MayaScene
+import ns.maya.msv.MayaAgent as MayaAgent
+import ns.maya.msv.MayaSkin as MayaSkin
+import ns.bridge.data.Scene as Scene
 
 kName = "msvSceneImport"
 
-kMasFileFlag = "-mas"
-kMasFileFlagLong = "-masFile"
-kCdlFileFlag = "-cdl"
-kCdlFileFlagLong = "-cdlFile"
+kFileFlag = "-f"
+kFileFlagLong = "-file"
+kLoadGeometryFlag = "-lg"
+kLoadGeometryFlagLong = "-loadGeometry"
+kSkinTypeFlag = "-skt"
+kSkinTypeFlagLong = "-skinType"
+kLoadSegmentsFlag = "-ls"
+kLoadSegmentsFlagLong = "-loadSegments"
+kLoadMaterialsFlag = "-lm"
+kLoadMaterialsFlagLong = "-loadMaterials"
+kMaterialTypeFlag = "-mt"
+kMaterialTypeFlagLong = "-materialType"
+kInstanceSegmentsFlag = "-is"
+kInstanceSegmentsFlagLong = "-instanceSegments"
+
 	
 class MsvSceneImportCmd( OpenMayaMPx.MPxCommand ):
 	def __init__(self):
 		OpenMayaMPx.MPxCommand.__init__(self)
-		self._reset()
 		
-	def _reset(self):
-		self._options = {}
-	
 	def isUndoable( self ):
 		return False
 	
 	def _parseArgs( self, argData ):		
-
-		if argData.isFlagSet( kMasFileFlag ):
-			self._options[MsvOpt.kMasFile] = argData.flagArgumentString( kMasFileFlag, 0 )
-		if argData.isFlagSet( kCdlFileFlag ):
-			self._options[MsvOpt.kCdlFile] = argData.flagArgumentString( kCdlFileFlag, 0 )
-						
-		if (not MsvOpt.kMasFile in self._options and
-		    not MsvOpt.kCdlFile in self._options):
-			raise npy.Errors.BadArgumentError( "The -masFile/-mas or -cdlFile/-cdl flag is required" )
-		if (MsvOpt.kMasFile in self._options and
-		    MsvOpt.kCdlFile in self._options):
-			raise npy.Errors.BadArgumentError( "The -masFile/-mas and -cdlFile/-cdl flags are mutually exclusive" )
 		
+		options = {}
+		if argData.isFlagSet(kFileFlag):
+			options[kFileFlag] = argData.flagArgumentString( kFileFlag, 0 )
+		else:
+			raise npy.Errors.BadArgumentError( "The -file/-f flag is required." )
+		
+		if argData.isFlagSet(kLoadGeometryFlag):
+			options[kLoadGeometryFlag] = argData.flagArgumentBool(kLoadGeometryFlag, 0)
+		else:
+			options[kLoadGeometryFlag] = True
+			
+		if argData.isFlagSet( kSkinTypeFlag ):
+			str = argData.flagArgumentString( kSkinTypeFlag, 0 )
+			if (str == "smooth"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.smooth
+			elif (str == "duplicate"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.duplicate
+			elif (str == "instance"):
+				options[kSkinTypeFlag] = MayaSkin.eSkinType.instance
+			else:
+				raise ns.py.Errors.BadArgumentError( 'Please choose either "smooth", "duplicate", or "instance" as the skinType' )
+		else:
+			options[kSkinTypeFlag] = MayaSkin.eSkinType.smooth
+
+		if argData.isFlagSet( kLoadSegmentsFlag ):
+			options[kLoadSegmentsFlag] = argData.flagArgumentBool( kLoadSegmentsFlag, 0 )
+		else:
+			options[kLoadSegmentsFlag] = False
+			
+		if argData.isFlagSet( kLoadMaterialsFlag ):
+			options[kLoadMaterialsFlag] = argData.flagArgumentBool( kLoadMaterialsFlag, 0 )
+		else:
+			options[kLoadMaterialsFlag] = True
+			
+		if argData.isFlagSet(kMaterialTypeFlag):
+			options[kMaterialTypeFlag] = argData.flagArgumentString(kMaterialTypeFlag, 0)
+		else:
+			options[kMaterialTypeFlag] = "blinn"
+
+		if argData.isFlagSet( kInstanceSegmentsFlag ):
+			options[kInstanceSegmentsFlag] = argData.flagArgumentBool( kInstanceSegmentsFlag, 0 )
+		else:
+			options[kInstanceSegmentsFlag] = True
+
+		return options
 						
 	def doIt(self,argList):
-		self._reset()
-		
 		argData = OpenMaya.MArgDatabase( self.syntax(), argList )
 
-		self._parseArgs( argData )
+		options = self._parseArgs( argData )
 		
 		undoQueue = mc.undoInfo( query=True, state=True )
 
@@ -81,13 +120,27 @@ class MsvSceneImportCmd( OpenMayaMPx.MPxCommand ):
 			try:
 				mc.undoInfo( state=False )
 				
-				if MsvOpt.kMasFile in self._options:				
-					masHandle = open(self._options[MsvOpt.kMasFile], "r")
-					mas = MasReader.read(masHandle)
-					MayaPlacement.build(mas)
-				elif MsvOpt.kCdlFile in self._options:
-					cdlReader = CDLReader.CDLReader()
-					agentSpec = cdlReader.read( self._options[MsvOpt.kCdlFile] )
+				scene = Scene.Scene()
+				
+				file = options[kFileFlag]
+				ext = os.path.splitext(file)[1]
+				if ext == ".mas":
+					scene.setMas(file)
+				elif ext == ".cdl":
+					scene.addCdl(file)
+				else:
+					raise npy.Errors.BadArgumentError( "Please provide a Massive setup (.mas) or agent (.cdl) file." )
+				
+				agentOptions = MayaAgent.Options()
+				agentOptions.loadGeometry = options[kLoadGeometryFlag]
+				agentOptions.loadPrimitives = options[kLoadSegmentsFlag]
+				agentOptions.loadMaterials = options[kLoadMaterialsFlag]
+				agentOptions.skinType = options[kSkinTypeFlag]
+				agentOptions.instancePrimitives = options[kInstanceSegmentsFlag]
+				agentOptions.materialType = options[kMaterialTypeFlag]
+				
+				mayaScene = MayaScene.MayaScene()
+				mayaScene.build(scene, agentOptions)
 			finally:
 				mc.undoInfo( state=undoQueue )
 		except npy.Errors.AbortError:
@@ -101,8 +154,7 @@ def creator():
 
 def syntaxCreator():
 	syntax = OpenMaya.MSyntax()
-	syntax.addFlag( kMasFileFlag, kMasFileFlagLong, OpenMaya.MSyntax.kString )
-	syntax.addFlag( kCdlFileFlag, kCdlFileFlagLong, OpenMaya.MSyntax.kString )
+	syntax.addFlag( kFileFlag, kFileFlagLong, OpenMaya.MSyntax.kString )
 	
 	return syntax
 	

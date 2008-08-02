@@ -62,8 +62,11 @@ class MayaFactory:
 	def importObj(self, file, groupName):
 		'''Import and prep an obj file. This is used to import the terrain
 		   object as well as the agent geometry objects.'''
+		print >> sys.stderr, "file -import"
+		print >> sys.stderr, "groupName: %s" % groupName
 		importedNodes = mc.file(file, returnNewNodes=True, type="OBJ", options='mo=0',
 								groupName=groupName, groupReference=True, i=True)
+		print >> sys.stderr, "file -import DONE"
 		meshes = mc.ls(importedNodes, long=True, type="mesh")
 		for mesh in meshes:
 			mc.polySoftEdge(mesh, a=180, ch=False)
@@ -90,11 +93,13 @@ class MayaFactory:
 			# "master" exists, copy it.
 			mayaGeometry.skin = self.geoMasters[key].copy( groupName, mayaGeometry.skinnable() )
 		else:
+			print >> sys.stderr,  "importGeometry %s" % (mayaGeometry.file())
 			# no "master", create one, and then copy it.
 			skin = MayaSkin.MayaSkin(group=self.importObj(mayaGeometry.file(), groupName),
 									 name=groupName,
 									 parent=self._getGeoMastersGroup(),
 									 skinType=skinType)
+			print >> sys.stderr, "done importGeometry"
 	 		#regulator = mc.createNode( "msvMeshRegulator", name="regulator", skipSelect=True )
 	 		#mc.connectAttr( "%s.outMesh" % skin.shapeName(), "%s.inMesh" % regulator )
 			if ( not mayaGeometry.attached() and

@@ -118,6 +118,7 @@ class GeoIter:
 		self._agent = agent
 		self._list = db._optioned.values()
 		self._last = len(self._list) - 1
+		print >> sys.stderr, "LAST: %s" % self._last
 		self._index = -1
 		
 	def __iter__(self):
