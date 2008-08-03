@@ -36,7 +36,6 @@ class eSkinType:
 
 class MayaSkin:
 	def __init__(self, group, name, skinType, parent=""):
-		print >> sys.stderr, "MayaSkin"
 		self.groupName = group
 		self._shapeName = ""
 		self._skinType = skinType
@@ -57,8 +56,6 @@ class MayaSkin:
 		if shapes:
 			self._shapeName = shapes[0][len(self.groupName) + 1:]
 		
-		print >> sys.stderr, "MayaSkin done"
-	
 	def copy(self, groupName, skinnable):
 		if ( not skinnable or eSkinType.smooth == self._skinType ):
 			# If the destination geometry is attached, has no skin weights,

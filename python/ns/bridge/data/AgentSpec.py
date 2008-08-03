@@ -118,7 +118,6 @@ class GeoIter:
 		self._agent = agent
 		self._list = db._optioned.values()
 		self._last = len(self._list) - 1
-		print >> sys.stderr, "LAST: %s" % self._last
 		self._index = -1
 		
 	def __iter__(self):
@@ -136,7 +135,7 @@ class GeoIter:
 			# than there are options - make sure we don't get an index out
 			# of bounds.
 			#
-			value = min(self._agent.variableValue( item.var, True ), len(item.inputs) - 1)
+			value = min(self._agent.variableValue(item.var, asInt=True), len(item.inputs) - 1)
 			item = item.inputs[value]
 		
 		assert isinstance(item, Geometry)

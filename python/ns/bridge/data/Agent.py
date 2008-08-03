@@ -27,7 +27,7 @@ import os.path
 
 import ns.bridge.data.SimData as SimData
 
-def formatAgentName( name, id="" ):
+def formatAgentName(name, id=""):
 	'''Convenience function to make sure all of the agent
 	   names are consistent. Sometimes they are read in
 	   two parts, and sometimes that use a '.' as a delimeter,
@@ -39,7 +39,8 @@ def formatAgentName( name, id="" ):
 	return agentName
 
 class Agent:
-	def __init__(self):
+	def __init__(self, instanced=True):
+		self._instanced = instanced
 		self.reset()
 	
 	def reset(self):
@@ -74,7 +75,7 @@ class Agent:
 		replaced = s
 		matches = re.search("'(\w*)'", s)
 		if matches:
-			value = self.variableValue( matches.group(1), True )
+			value = self.variableValue( matches.group(1), asInt=True )
 			replaced = re.sub("'\w*'", `value`, s)
 		return replaced
 		
@@ -88,47 +89,65 @@ class Agent:
 		for var in self.agentSpec.variables.keys():
 			matches = re.search( var, expr )
 			if matches:
-				value = self.variableValue( matches.group(0), False )
+				value = self.variableValue(matches.group(0))
 				expr = re.sub(var, `value`, expr)
 		return float(eval(expr))
 				
 	
-	def variableValue( self, variableName, asInt=False, varies=True ):
+	def variableValue( self, variableName, asInt=False, forceDefault=False ):
 		'''Return the current value of the variable.
 		   If the variable's value has been fixed via a sim, use the fixed
 		   value. If no fixed value exists, either evaluate the variable's
 		   expression or return a random number within its range. Finally
 		   if variation has been disabled for this variable, return its
 		   default value.'''
-		value = 0.0
+		   
 		try:
-			# Default value will be used if variation has been disabled
+			# Variable has been fixed by a sim or computed earlier
 			#
-			value = self.agentSpec.variables[variableName].default
+			value = self.variableValues[variableName]
 		except:
-			value = 0.0
-
-		# If variation is enabled determine the appropriate value
-		#
-		if varies:
-			if variableName in self.variableValues:
-				# Variable has been fixed by a sim or computed earlier
-				#
-				value = self.variableValues[variableName]
-			elif variableName in self.agentSpec.variables:
+			# In calculating the value we have a few options:
+			# 1. This variable doesn't actually exist, assign 0
+			# 2. 'forceDefault' is true, assign the variable's default
+			# 3. Variable has an expression and 'forceDefault' is false, evaluate it
+			# 3. No expression and 'forceDefault' is false
+			#	 a. agent is instanced, assign a random value
+			#		Note: this shouldn't happen if a callsheet was provided
+			#	 b. agent is not-instanced, assign the variable's default
+			variable = None
+			try:
 				variable = self.agentSpec.variables[variableName]
-				if variable.expression:
+				useDefault = False
+				if forceDefault:
+					useDefault = True
+				elif variable.expression:
 					value = self.evalExpression( variable.expression )
-				else:
+				elif self._instanced:
 					value = random.uniform( variable.min, variable.max )
-				# Store the computed variable value so that repeated
-				# queries of the same variable will return the same
-				# value
-				#
-				self.variableValues[variableName] = value
-
+				else:
+					useDefault = True
+			except:
+				# Probably couldn't find a variable. In any case,
+				# use the default value.
+				useDefault = True
+				
+			if useDefault:
+				if variable:
+					# Default value will be used if we're not instanced
+					value = variable.default
+				else:
+					value = 0.0
+					
+			# Store the computed variable value so that repeated
+			# queries of the same variable will return the same
+			# value
+			#
+			self.variableValues[variableName] = value
+			
 		# Round to an integer if needed
 		#
 		if asInt:
-			value = int(round(value))
+			value = int(round(value))			
+			
 		return value

@@ -34,7 +34,8 @@ class Scene:
 	   data such as callsheets and simmed .apf or .amc files.'''
 	def __init__(self):
 		self._mas = MasSpec.MasSpec()
-		self._agentSpecs = {}
+		self._agentSpecMap = {}
+		self._agentSpecs = []
 		self_baseName = ""
 		
 	def resolvePath(self, path):
@@ -50,7 +51,7 @@ class Scene:
 		return self._baseName
 	
 	def agentSpecs(self):
-		return self._agentSpecs.values()
+		return self._agentSpecs
 	
 	def mas(self):
 		return self._mas
@@ -73,7 +74,7 @@ class Scene:
 		'''Key is either an agent type or the absolute path to a CDL file.'''
 		agentSpec = None
 		try:
-			agentSpec = self._agentSpecs[key]
+			agentSpec = self._agentSpecMap[key]
 		except:
 			if os.path.isfile(key):
 				agentSpec = CDLReader.read(key)
@@ -91,8 +92,9 @@ class Scene:
 				# the importer will use the agent names found in the sim data
 				# as the agent types
 				#
-				self._agentSpecs[agentSpec.cdlFile] = agentSpec
-				self._agentSpecs[agentSpec.agentType] = agentSpec
+				self._agentSpecMap[agentSpec.cdlFile] = agentSpec
+				self._agentSpecMap[agentSpec.agentType] = agentSpec
+				self._agentSpecs.append( agentSpec )
 			else:
 				raise
 		return agentSpec

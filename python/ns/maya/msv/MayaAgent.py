@@ -71,9 +71,8 @@ class MayaMaterial:
 				# For now only the color map is allowed to vary. If a variable is
 				# present elsewhere its default value will be used
 				#
-				mayaColor[i] = self._agent.variableValue( colorVar[i],
-													  asInt=False,
-													  varies=False )
+				mayaColor[i] = self._agent.variableValue(colorVar[i],
+													   	 forceDefault=True)
 			else:
 				mayaColor[i] = color[i]
 		if colorSpace != "rgb":
@@ -114,9 +113,8 @@ class MayaMaterial:
 			# For now only the color map is allowed to vary. If a variable is
 			# present elsewhere its default value will be used
 			#
-			self.roughness = self._agent.variableValue( self._material.roughnessVar,
-														asInt=False,
-														varies=False )
+			self.roughness = self._agent.variableValue(self._material.roughnessVar,
+													   forceDefault=True)
 		else:
 			self.roughness = self._material.roughness
 		
@@ -175,9 +173,7 @@ class MayaGeometry:
 		#		if this is to work with 7.0
 		# TODO: maybe use namespaces? Or a better renaming prefix?
 		if self.mayaAgent:
-			print >> sys.stderr, "importing"
 			self.mayaAgent.importGeometry(self, self.geometry.name, skinType)
-			print >> sys.stderr, "done importing"
 			if self.attached():
 				[name] = mc.parent(self.name(),
 								   self.mayaAgent.mayaJoint(self.geometry.attach).name )
@@ -311,7 +307,7 @@ class MayaJoint:
 
  	def scale(self):
 		if self._joint.scaleVar:
-			val = self.agent.variableValue(self._joint.scaleVar, False)
+			val = self.agent.variableValue(self._joint.scaleVar)
 			mc.scale( val, val, val, self.name )
 			
 	def setChannelOffsets(self):
@@ -371,7 +367,7 @@ class MayaJoint:
 		# are applied later, so we don't have to account for them here.
 		#
 		if self.agent.agentSpec().scaleVar:
-			val = self.agent.variableValue( self.agent.agentSpec().scaleVar, False )
+			val = self.agent.variableValue(self.agent.agentSpec().scaleVar)
 			mc.scale( val, val, val, self.primitive.name )
 
 		[ self.primitive.name ] = mc.parent(self.primitive.name, self.name, relative=True)
@@ -447,8 +443,8 @@ class MayaAgent:
 	def id(self):
 		return self._agent.id
 
-	def variableValue( self, variableName, asInt=False, varies=True ):
-		return self._agent.variableValue( variableName, asInt, varies )
+	def variableValue( self, variableName, asInt=False, forceDefault=False ):
+		return self._agent.variableValue(variableName, asInt, forceDefault)
 
 	def replaceEmbeddedVariables( self, s ):
 		return self._agent.replaceEmbeddedVariables( s )
@@ -479,7 +475,7 @@ class MayaAgent:
 		if not self._agentGroup:
 			self._agentGroup = mc.group(empty=True, name=self.name())
 			if self.agentSpec().scaleVar:
-				val = self.variableValue(self.agentSpec().scaleVar, False)
+				val = self.variableValue(self.agentSpec().scaleVar)
 				mc.scale(val, val, val, self._agentGroup)
 			self._agentGroup = '|%s' % self._agentGroup
 		return self._agentGroup
@@ -493,13 +489,11 @@ class MayaAgent:
 		# joint. And if we are chunk skinning using instances the geometry
 		# should stay under the master group.
 		#
-		print >> sys.stderr, "registering geo"
 		if (not mayaGeometry.attached() and
 			MayaSkin.eSkinType.instance != skinType):
 			[name] = mc.parent(mayaGeometry.name(), self.agentGroup(), relative=True)
  			[name] = mc.ls(name, long=True)
  			mayaGeometry.setName(name)
- 		print >> sys.stderr, "done registering geo"
  	
 	def registerRootJoint( self, rootJoint ):
 		assert not self.skelGroup
@@ -559,13 +553,10 @@ class MayaAgent:
 	def _buildGeometry(self, skinType, loadMaterials, materialType):
 		for geometry in AgentSpec.GeoIter( self.agentSpec().geoDB, self ):
 			if not geometry:
-				print >> sys.stderr, "skipping"
 				# some ids may not be used (e.g. 0)
 				continue
 			mayaGeometry = MayaGeometry(self, geometry)
-			print >> sys.stderr, "building"
 			mayaGeometry.build(skinType, loadMaterials, materialType)
-			print >> sys.stderr, "done building one geo"
  
   	def _setBindPose( self ):
  		# The bind pose is stored in frame 1
@@ -640,11 +631,9 @@ class MayaAgent:
 		self._buildSkeleton()
 		
 		if options.loadGeometry:
-			print >> sys.stderr, "loading geometry"
 			self._buildGeometry(options.skinType,
 								options.loadMaterials,
 								options.materialType)
-			print >> sys.stderr, "done loading geometry"
 		
 		# Make sure the agent scale doesn't also scale the translate values of
 		# the sim data. We have to freeze the transform here since we won't
@@ -653,15 +642,11 @@ class MayaAgent:
 		self._freezeAgentScale()
 		
 		if options.loadPrimitives:
-			print >> sys.stderr, "loading primitives"
 			self._buildPrimitives(options.instancePrimitives)
-			print >> sys.stderr, "done loading primitives"
 					
 		if options.loadGeometry:
-			print >> sys.stderr, "binding skin"
 			self._setBindPose()
 			self._bindSkin(options.skinType)
-			print >> sys.stderr, "done binding skin"
 		
 		# Has to happen after skin is bound
 		self._scaleJoints()

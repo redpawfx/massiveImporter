@@ -43,12 +43,13 @@ class MayaScene:
 		MayaPlacement.build(scene.mas())
 		
 		for agentSpec in scene.agentSpecs():
-			agent = Agent.Agent()
+			agent = Agent.Agent(instanced=False)
 			agent.agentSpec = agentSpec
+			agent.name = agentSpec.agentType
 			mayaAgent = MayaSceneAgent.MayaSceneAgent(agent, self._factory, scene)
 			mayaAgent.build(agentOptions)
-			mayaAgent.loadActions()
+			#mayaAgent.loadActions()
 		
-		print >> sys.stderr, "DONE"
+		self._factory.cleanup()
 
 		
