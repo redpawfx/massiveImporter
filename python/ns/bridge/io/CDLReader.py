@@ -296,7 +296,7 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 	#Loads the matrix m into the segment rest matrix. Ignores any previous transformations to the rest matrix.
 	#translate x y z 	Specifies a translation of segment rest space.
 	iconTranslate = [ 0, 0 ]
-	# bind_pose x y z TAG IGNORED
+	# bind_pose x y z Offset to be applied when keying actions
 	# dof rx ry rz tx ty tz Degrees of freedom limited to specified channels
 	
 	tokens = []
@@ -359,6 +359,10 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 					joint.dof[AgentSpec.channel2Enum[channel]] = True
 			elif tokens[0] == "scale_var":
 				joint.scaleVar = tokens[1]	
+			elif tokens[0] == "bind_pose":
+				# It seems like these values have to be subtracted from the
+				# bind pose before the action is applied
+				joint.actionOffset = [ -float(tokens[1]), -float(tokens[2]), -float(tokens[3]) ]
 			else:
 				pass
 			

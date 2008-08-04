@@ -28,6 +28,7 @@ import maya.cmds as mc
 import ns.bridge.data.Agent as Agent
 import ns.bridge.data.AgentSpec as AgentSpec
 
+import ns.maya.msv.MayaAgent as MayaAgent
 import ns.maya.msv.MayaPlacement as MayaPlacement
 import ns.maya.msv.MayaFactory as MayaFactory
 import ns.maya.msv.MayaSceneAgent as MayaSceneAgent
@@ -48,8 +49,12 @@ class MayaScene:
 			agent.name = agentSpec.agentType
 			mayaAgent = MayaSceneAgent.MayaSceneAgent(agent, self._factory, scene)
 			mayaAgent.build(agentOptions)
-			#mayaAgent.loadActions()
 		
 		self._factory.cleanup()
+		
+		# The layers are off by default to speed up load, turn them on
+		# now.
+		#	
+		MayaAgent.showLayers()
 
 		

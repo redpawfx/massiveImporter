@@ -40,38 +40,39 @@ class MayaAction:
 	def __init__(self, mayaAgent, action):
 		self._action = action
 		self._mayaAgent = mayaAgent
- 	
- 	def build( self ):
- 		for channel in self._action.curves.keys():
- 			curve = self._action.curves[channel]
- 			tokens = channel.split()
- 			if len(tokens) == 1:
- 				object = self._mayaAgent.skelGroup
- 				attr = tokens[0]
- 			else:
-  			 	object = self._mayaAgent.mayaJoint(tokens[0]).name
-  			 	attr = tokens[1]
+	
+	def build( self ):
+		for channel in self._action.curves.keys():
+			curve = self._action.curves[channel]
+			tokens = channel.split()
+			if len(tokens) == 1:
+				object = self._mayaAgent.skelGroup
+				attr = tokens[0]
+			else:
+			 	object = self._mayaAgent.mayaJoint(tokens[0]).name
+			 	attr = tokens[1]
 
- 			if not attr in kAnimatableAttrs:
- 		 		# TODO: figure out how to handle non rot/trans attrs
- 		 		continue
- 		 	if object == self._mayaAgent.skelGroup:
- 		 		# TODO: handle _agent animation... are these "agent curves"?
- 		 		continue
+			if not attr in kAnimatableAttrs:
+		 		# TODO: figure out how to handle non rot/trans attrs
+		 		continue
+		 	if object == self._mayaAgent.skelGroup:
+		 		# TODO: handle _agent animation... are these "agent curves"?
+		 		continue
 
- 			baseValue = mc.getAttr("%s.%s" % (object, attr))
- 			for key in curve.points:
- 				mc.setKeyframe( object, attribute=attr,
+		 	channelAttr = "%s.%s" % (object, attr)
+		 	offset = mc.getAttr(channelAttr)
+			for key in curve.points:
+				mc.setKeyframe( object, attribute=attr,
 								inTangentType="linear", outTangentType="linear",
-								time=key[0] * self._action.maxPoints, value=key[1] + baseValue)
- 			
- 		clip = mc.clip(self._mayaAgent.characterSet,
+								time=key[0] * self._action.maxPoints, value=key[1] + offset)
+			
+		clip = mc.clip(self._mayaAgent.characterSet,
 					   startTime=0,
 					   endTime=self._action.maxPoints,
 					   allRelative=True,
 					   scheduleClip=False)
- 		mc.clip(self._mayaAgent.characterSet, name=clip, newName=self._action.name)
- 
+		mc.clip(self._mayaAgent.characterSet, name=clip, newName=self._action.name)
+
 
 class MayaSceneAgent(MayaAgent.MayaAgent):
 	def __init__(self, agent, mayaFactory, scene):
@@ -80,27 +81,40 @@ class MayaSceneAgent(MayaAgent.MayaAgent):
 		self.characterSet = ""
 		self.actions = {}
 			
- 	def _buildCharacterSet(self):
- 		setMembers = [ "%s.%s" % (mayaJoint.name, attr) for mayaJoint in self.mayaJoints.values() for attr in kAnimatableAttrs ]
- 		self.characterSet = mc.character(setMembers, name=("%sCharacter" % self.name()))
+	def _buildCharacterSet(self):
+		setMembers = [ "%s.%s" % (mayaJoint.name, attr) for mayaJoint in self.mayaJoints.values() for attr in kAnimatableAttrs ]
+		self.characterSet = mc.character(setMembers, name=("%sCharacter" % self.name()))
+
+	def _applyOffsets(self):
+		'''Certain segments need to be offset from their bindpose before an
+		   action can be applied.'''
+		for joint in self._agent.joints():
+			mayaJoint = self.mayaJoint(joint.name)
+			mc.xform(mayaJoint.name,
+					 rotation=(joint.actionOffset),
+					 objectSpace=True, relative=True)
 
 	def _applyActions(self):
- 		# The rotation order needed to build the skeleton does not apply
- 		# to the animation - it is assumed to be xyz
- 		#
- 		for mayaJoint in self.mayaJoints.values():
- 			mc.setAttr("%s.rotateOrder" % mayaJoint.name, MayaAgent.kRotateOrder2Enum['xyz'])
+		# The rotation order needed to build the skeleton does not apply
+		# to the animation - it is assumed to be xyz
+		#
+		for mayaJoint in self.mayaJoints.values():
+			mc.setAttr("%s.rotateOrder" % mayaJoint.name, MayaAgent.kRotateOrder2Enum['xyz'])
 
 		for action in self.agentSpec().actions.values():
- 	 		mc.dagPose(self._zeroPose, restore=True)
- 	 		mayaAction = MayaAction( self, action )
- 	 		self.actions[action.name] = mayaAction
- 	 		print >> sys.stderr, "building action"
- 	 		mayaAction.build()
- 	 		
-	def loadActions(self):
+	 		mc.dagPose(self._zeroPose, restore=True)
+	 		self._applyOffsets()
+	 		mayaAction = MayaAction( self, action )
+	 		self.actions[action.name] = mayaAction
+	 		mayaAction.build()
+	 		
+	def build(self, agentOptions):
+		MayaAgent.MayaAgent.build(self, agentOptions)
+		
 		self._buildCharacterSet()
 		self._applyActions()
 		
 		if self._zeroPose:
 			mc.dagPose( self._zeroPose, restore=True )
+			
+		self.setupDisplayLayers()

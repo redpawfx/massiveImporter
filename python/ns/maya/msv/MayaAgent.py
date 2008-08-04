@@ -268,44 +268,44 @@ class MayaDisc(MayaPrimitive):
 		MayaPrimitive.build(self)
 
 class MayaJoint:
- 	def __init__(self, agent, joint, factory):
- 		self.agent = agent
- 		self._joint = joint
- 		self._factory = factory
- 		self.primitive = None
- 		self.name = ""
- 		self.channelOffsets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+	def __init__(self, agent, joint, factory):
+		self.agent = agent
+		self._joint = joint
+		self._factory = factory
+		self.primitive = None
+		self.name = ""
+		self.channelOffsets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
- 	def joint( self ):
- 		return self._joint
- 	
- 	def primitiveName( self ):
- 		if self.primitive:
- 			return "%s|%s" % (self.name, self.primitive.name)
- 		else:
- 			return ""
+	def joint( self ):
+		return self._joint
+	
+	def primitiveName( self ):
+		if self.primitive:
+			return "%s|%s" % (self.name, self.primitive.name)
+		else:
+			return ""
 
- 	def isChannelFree( self, channel ):
- 		return self._joint.dof[channel]
+	def isChannelFree( self, channel ):
+		return self._joint.dof[channel]
 
- 	def rotateOrderString( self, reversed ):
- 		order = self._joint.order
- 		rotateOrder = ""
- 		indices = []
- 		if reversed:
- 			indices = range(len(order) - 1, -1, -1)
- 		else:
- 			indices = range(len(order))
- 		for i in indices:
- 			if AgentSpec.kRX == order[i]:
- 				rotateOrder += "x"
- 			elif AgentSpec.kRY == order[i]:
- 				rotateOrder += "y"
- 			elif AgentSpec.kRZ == order[i]:
- 				rotateOrder += "z"
- 		return rotateOrder
+	def rotateOrderString( self, reversed ):
+		order = self._joint.order
+		rotateOrder = ""
+		indices = []
+		if reversed:
+			indices = range(len(order) - 1, -1, -1)
+		else:
+			indices = range(len(order))
+		for i in indices:
+			if AgentSpec.kRX == order[i]:
+				rotateOrder += "x"
+			elif AgentSpec.kRY == order[i]:
+				rotateOrder += "y"
+			elif AgentSpec.kRZ == order[i]:
+				rotateOrder += "z"
+		return rotateOrder
 
- 	def scale(self):
+	def scale(self):
 		if self._joint.scaleVar:
 			val = self.agent.variableValue(self._joint.scaleVar)
 			mc.scale( val, val, val, self.name )
@@ -315,22 +315,22 @@ class MayaJoint:
 		   translate animation applied will be relative to these values.'''
 		[baseTranslate] = mc.getAttr("%s.translate" % self.name)
 		self.channelOffsets[AgentSpec.channel2Enum["tx"]] = baseTranslate[0]
- 		self.channelOffsets[AgentSpec.channel2Enum["ty"]] = baseTranslate[1]
- 		self.channelOffsets[AgentSpec.channel2Enum["tz"]] = baseTranslate[2]
- 	 	
- 	def build(self):
- 		self.name = mc.createNode("joint", name=self._joint.name)
- 
-  		mc.setAttr((self.name + ".rotateOrder"), kRotateOrder2Enum[self.rotateOrderString(False)])
- 
- 		if self._joint.translate:
+		self.channelOffsets[AgentSpec.channel2Enum["ty"]] = baseTranslate[1]
+		self.channelOffsets[AgentSpec.channel2Enum["tz"]] = baseTranslate[2]
+	 	
+	def build(self):
+		self.name = mc.createNode("joint", name=self._joint.name)
+
+		mc.setAttr((self.name + ".rotateOrder"), kRotateOrder2Enum[self.rotateOrderString(False)])
+
+		if self._joint.translate:
 			mc.move( self._joint.translate[0], self._joint.translate[1], self._joint.translate[2],
 					 self.name, objectSpace=True, relative=True )
 		
 		if self._joint.transform:
 			mc.xform( self.name, matrix=self._joint.transform, objectSpace=True, relative=True)
 			
- 		# Use the 'joint' command to set the rotation degrees of freedom.
+		# Use the 'joint' command to set the rotation degrees of freedom.
 		# However since joints don't have a built-in concept of translation
 		# degrees of freedom, just lock the translate channel attributes
 		#
@@ -341,11 +341,11 @@ class MayaJoint:
 			# Only lock of the entry is ""
 			#lock = not bool(dof[tdof])
 			#mc.setAttr( joint + '.' + tdof, lock=lock )
- 	
- 		if self._joint.parent:
- 			[self.name] = mc.parent(self.name, self.agent.mayaJoint(self._joint.parent).name, relative=True)
- 			[self.name] = mc.ls(self.name, long=True)
-  	
+	
+		if self._joint.parent:
+			[self.name] = mc.parent(self.name, self.agent.mayaJoint(self._joint.parent).name, relative=True)
+			[self.name] = mc.ls(self.name, long=True)
+	
 		# Need to zero out the transform so that actions are applied correctly.
 		# Unfortunately this also causes us to lose the existing transform info
 		# when we export back to massive we may need this transform info...
@@ -353,7 +353,7 @@ class MayaJoint:
 		# to support actions besides zeroing out the transformation information?
 		mc.makeIdentity(self.name, apply=True, translate=True, rotate=True)
 		self.setChannelOffsets()
- 		
+		
 		if not self.agent.rootJoint:
 			self.agent.registerRootJoint( self )
 			
@@ -492,9 +492,9 @@ class MayaAgent:
 		if (not mayaGeometry.attached() and
 			MayaSkin.eSkinType.instance != skinType):
 			[name] = mc.parent(mayaGeometry.name(), self.agentGroup(), relative=True)
- 			[name] = mc.ls(name, long=True)
- 			mayaGeometry.setName(name)
- 	
+			[name] = mc.ls(name, long=True)
+			mayaGeometry.setName(name)
+	
 	def registerRootJoint( self, rootJoint ):
 		assert not self.skelGroup
 		self.rootJoint = rootJoint
@@ -517,12 +517,12 @@ class MayaAgent:
 		for primitive in self.primitiveData:
 			mc.editDisplayLayerMembers( getPrimitiveLayer(), primitive.name )
 
- 	def _scaleJoints(self):
- 		for mayaJoint in self.mayaJoints.values():
- 			mayaJoint.scale()
- 			
-  	def _freezeAgentScale(self):
-  		'''Make sure the agent scale doesn't also scale the translate values of
+	def _scaleJoints(self):
+		for mayaJoint in self.mayaJoints.values():
+			mayaJoint.scale()
+			
+	def _freezeAgentScale(self):
+		'''Make sure the agent scale doesn't also scale the translate values of
 		   the sim data. We have to freeze the transform here since we won't
 		   be allowed to after binding the skin'''
 	
@@ -530,11 +530,11 @@ class MayaAgent:
 	  	# of any/all mayaJoints in the skeleton, store those new translations as
 	  	# the base values.
 	  	#
-  		mc.makeIdentity(self.agentGroup(), apply=True,
+		mc.makeIdentity(self.agentGroup(), apply=True,
 						translate=True, rotate=True, scale=True,
 						normal=0)
- 		for mayaJoint in self.mayaJoints.values():
- 			mayaJoint.setChannelOffsets()
+		for mayaJoint in self.mayaJoints.values():
+			mayaJoint.setChannelOffsets()
 
 	def _buildSkeleton(self):
 		for joint in self.agentSpec().jointData:
@@ -557,31 +557,31 @@ class MayaAgent:
 				continue
 			mayaGeometry = MayaGeometry(self, geometry)
 			mayaGeometry.build(skinType, loadMaterials, materialType)
- 
-  	def _setBindPose( self ):
- 		# The bind pose is stored in frame 1
- 		if not self.agentSpec().bindPoseData:
- 			return
- 	
- 		for jointSim in self.agentSpec().bindPoseData.joints():
- 			mayaJoint = self.mayaJoint(jointSim.name())
- 			
- 	 		# AMC describes object space transformations
- 			#
- 			mc.move(jointSim.sample("tx", jointSim.startFrame()),
+
+	def _setBindPose( self ):
+		# The bind pose is stored in frame 1
+		if not self.agentSpec().bindPoseData:
+			return
+	
+		for jointSim in self.agentSpec().bindPoseData.joints():
+			mayaJoint = self.mayaJoint(jointSim.name())
+			
+	 		# AMC describes object space transformations
+			#
+			mc.move(jointSim.sample("tx", jointSim.startFrame()),
 					jointSim.sample("ty", jointSim.startFrame()),
 					jointSim.sample("tz", jointSim.startFrame()),
 					mayaJoint.name, objectSpace=True, relative=True )
- 			mc.xform(mayaJoint.name,
+			mc.xform(mayaJoint.name,
 					 rotation=(jointSim.sample("rx", jointSim.startFrame()),
 							   jointSim.sample("ry", jointSim.startFrame()),
 							   jointSim.sample("rz", jointSim.startFrame())),
 					 objectSpace=True, relative=True)
- 		
- 		self._bindPose = mc.dagPose(self.rootJoint.name, save=True, bindPose=True, name=(self.name() + "Bind"))
+		
+		self._bindPose = mc.dagPose(self.rootJoint.name, save=True, bindPose=True, name=(self.name() + "Bind"))
 
- 	def _createSkinCluster(self, geometry):
- 		[ shape ] = mc.listRelatives(geometry.name(), type='shape', fullPath=True, allDescendents=True)
+	def _createSkinCluster(self, geometry):
+		[ shape ] = mc.listRelatives(geometry.name(), type='shape', fullPath=True, allDescendents=True)
 		
 		deformers = [ self.mayaJoint(deformer).name for deformer in geometry.deformers() ]
 					

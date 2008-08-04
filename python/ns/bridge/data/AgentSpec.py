@@ -147,6 +147,14 @@ class Curve:
 		self.channel = channel
 		self.type = type
 		self.points = [()] * numPoints
+	
+	def __str__(self):
+		'''channel (type): point point point ...'''
+		str = "%s (%s):" % (self.channel, self.type)
+		for point in self.points:
+			if point:
+				str += " (%s, %s)" % point
+		return str
 
 class Action:
 	def __init__(self):
@@ -168,6 +176,17 @@ class Action:
  		 		self.maxPoints = len(curve.points)
  		 	 
   		 	self.curves[ "%s %s" % (object, attr) ] = curve
+  		 	
+  	def __str__(self):
+  		'''name
+  		   		curve
+  		   		curve
+  		   		...
+  		'''
+  		str = self.name
+  		for curve in self.curves.values():
+  			str += "\n\t%s" % curve
+  		return str
 
 class Primitive:
 	def __init__(self, joint):
@@ -205,6 +224,7 @@ class Joint:
  		self.dof = [ True ] * 6
  		self.primitive = None
  		self.order = [ kTX, kTY, kTZ, kRX, kRY, kRZ ]
+ 		self.actionOffset = [ 0, 0, 0 ]
  		self.translate = []
  		self.transform = []
 		self.scaleVar = ""

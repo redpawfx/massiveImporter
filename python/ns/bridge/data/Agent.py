@@ -56,6 +56,9 @@ class Agent:
 
 	def joint(self, jointName):
 		return self.agentSpec.joints[jointName]
+	
+	def joints(self):
+		return self.agentSpec.joints.values()
 
 	def simData(self):
 		return self._simData

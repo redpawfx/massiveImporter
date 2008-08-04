@@ -44,8 +44,7 @@ class MayaSim:
 		
 		for agent in sim.agents():
 			mayaAgent = MayaSimAgent.MayaSimAgent(agent, self._factory, sim)
-			mayaAgent.build(agentOptions)
-			mayaAgent.loadSim(animType, frameStep)
+			mayaAgent.build(agentOptions, animType, frameStep)
 			
 			# Presumably every agent will be simmed over the same frame
 			# range - however since the frame ranges could conceivably
@@ -58,7 +57,6 @@ class MayaSim:
 				if -sys.maxint == endFrame or mayaAgent.simData().endFrame > endFrame:
 					endFrame = mayaAgent.simData().endFrame
 			
-			mayaAgent.setupDisplayLayers()
 			mayaAgents.append(mayaAgent)
 
 		if cacheGeometry:

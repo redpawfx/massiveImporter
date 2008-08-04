@@ -45,7 +45,7 @@ class MayaSimAgent(MayaAgent.MayaAgent):
 	def simData( self ):
 		return self._agent.simData()
 			
-	def loadSim(self, animType, frameStep):
+	def _loadSim(self, animType, frameStep):
 		'''Load the simulation data for this MayaAgent. It will either be
 		   loaded as anim curves or through the msvSimLoader node.'''
 		if eAnimType.curves == animType:
@@ -145,4 +145,9 @@ class MayaSimAgent(MayaAgent.MayaAgent):
 		#
 		for geo in attachedGeo:
 			self.geometryData.remove(geo)
+			
+	def build(self, agentOptions, animType, frameStep):
+		MayaAgent.MayaAgent.build(self, agentOptions)
+		self._loadSim(animType, frameStep)
+		self.setupDisplayLayers()
 
