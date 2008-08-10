@@ -55,7 +55,7 @@ class MayaMaterial:
 				 materialType):
 		self._agent = agent
 		self._factory = mayaFactory
-		self._material = material
+		self.material = material
 		self.materialType = materialType
 		self.sgName = ""
 		self.colorMap = material.rawColorMap
@@ -80,43 +80,43 @@ class MayaMaterial:
 		return mayaColor
 		
 	def id(self):
-		return self._material.id
+		return self.material.id
 	
 	def name(self):
-		if self.colorMap != self._material.rawColorMap:
+		if self.colorMap != self.material.rawColorMap:
 			basename = os.path.basename(self.colorMap)
 			return os.path.splitext(basename)[0]
-		elif self._material.name:
-			return self._material.name
+		elif self.material.name:
+			return self.material.name
 		else:
 			return "%s%d" % (self.materialType, self.id())
 		
 	def build(self):
 		self.colorMap = self._agent.replaceEmbeddedVariables( self.colorMap )
 		
-		self.specular = self._resolveColor( self._material.specular,
-											self._material.specularVar,
-											self._material.specularSpace )
-		self.ambient = self._resolveColor( self._material.ambient,
-											self._material.ambientVar,
-											self._material.ambientSpace )
+		self.specular = self._resolveColor( self.material.specular,
+											self.material.specularVar,
+											self.material.specularSpace )
+		self.ambient = self._resolveColor( self.material.ambient,
+											self.material.ambientVar,
+											self.material.ambientSpace )
 		# The V component Massive diffuse HSV color is represented as the
 		# single 'diffuse' attribute in Maya.
 		#
-		diffuse = self._resolveColor( self._material.diffuse,
-									  self._material.diffuseVar,
-									  self._material.diffuseSpace )
+		diffuse = self._resolveColor( self.material.diffuse,
+									  self.material.diffuseVar,
+									  self.material.diffuseSpace )
 		diffuse = MayaUtil.rgbToHsv( diffuse )
 		self.diffuse = diffuse[2]
 		
-		if self._material.roughnessVar:
+		if self.material.roughnessVar:
 			# For now only the color map is allowed to vary. If a variable is
 			# present elsewhere its default value will be used
 			#
-			self.roughness = self._agent.variableValue(self._material.roughnessVar,
+			self.roughness = self._agent.variableValue(self.material.roughnessVar,
 													   forceDefault=True)
 		else:
-			self.roughness = self._material.roughness
+			self.roughness = self.material.roughness
 		
 		#print "map: %s" % `self.colorMap`
 		#print "specular: %s" % `self.specular`
@@ -124,6 +124,25 @@ class MayaMaterial:
 		#print "diffuse: %s" % `self.diffuse`
 		
 		self.sgName = self._factory.buildMaterial(self)		
+	
+	def dump(self):
+		'''	name:				shader name
+			id:					shader msvId attr
+			rawColorMap:		file fileTextureName attr
+			specular:			blinn specularColor attr or lambert msvSpecular attr
+			specularVar:		shader msvSpecularVar attr
+			specularSpace:		shader msvSpecularSpace attr
+			ambient:			shader ambientColor attr
+			ambientVar:			shader msvSpecularVar attr
+			ambientSpace:		shader msvAmbientSpace attr
+			diffuse:			shader diffuse attr
+			diffuseVar:			shader msvDiffuseVar attr
+			diffuseSpace:		shader msvDiffuseSpace attr
+			roughness:			blinn specularRollOff attr or lambert msvRolloff attr
+			roughnessVar:		shader msvRoughnessVar attr
+			leftovers:			shader msvLeftovers attr
+		'''
+		pass
 
 class MayaGeometry:
 	def __init__(self, mayaAgent, geometry):
@@ -174,6 +193,18 @@ class MayaGeometry:
 		# TODO: maybe use namespaces? Or a better renaming prefix?
 		if self.mayaAgent:
 			self.mayaAgent.importGeometry(self, self.geometry.name, skinType)
+			
+			# Data that doesn't make it into the Maya scene but that we have
+			# to hold onto so that we can write it back out to disk
+			mc.addAttr( self.name(), longName='msvId', attributeType='long' )
+			mc.setAttr( "%s.msvId" % self.name(), self.geometry.id )
+			mc.addAttr( self.name(), longName='msvFile', dataType='string' )
+			mc.setAttr( "%s.msvFile" % self.name(), self.geometry.file, type='string' )
+			if self.geometry.weightsData:
+				mc.addAttr( self.name(), longName='msvWeightsFile', dataType='string' )
+				mc.setAttr( "%s.msvWeightsFile" % self.name(), self.geometry.weightsData.name(), type='string' )
+
+			
 			if self.attached():
 				[name] = mc.parent(self.name(),
 								   self.mayaAgent.mayaJoint(self.geometry.attach).name )
@@ -192,6 +223,17 @@ class MayaGeometry:
 				mc.sets( self.name(), edit=True, forceElement="initialShadingGroup" )
 			self.mayaAgent.registerGeometry(self, skinType)
 
+	def dump(self):
+		'''	name:					transform name
+			file:					msvFile attribute
+			id:						msvId attribute
+			material:				assigned shader's msvId
+			weightsData.fullName:	msvWeightsFile attribute
+			weightsData.deformers:	from skin cluster
+			weightsData.weights:	from skin cluster
+			attach:					from skin cluster
+		'''
+		pass
 
 class MayaPrimitive:
 	def __init__(self, msvPrimitive, mayaJoint):
@@ -224,6 +266,13 @@ class MayaPrimitive:
 		# TODO: this is actually just bone_rotate for now, later they may 
 		# the actual rotate tag to contend with
 		mc.xform(self.name, rotation=self._msvPrimitive.rotate, objectSpace=True, relative=True)
+		
+	def dump(self):
+		'''	rotate:			primitive rotation
+			axis:			from child class
+			centre:			primitive rotatePivot/scalePivot
+		'''
+		pass
 
 class MayaTube(MayaPrimitive):
 	def __init__(self, msvPrimitive, mayaJoint):
@@ -236,6 +285,12 @@ class MayaTube(MayaPrimitive):
 								  		 roundCap=True, ch=False, name=self.baseName )
 		MayaPrimitive.build(self)
 		
+	def dump(self):
+		'''	axis:			creator axis
+			radius:			creator radius
+			length:			creator height
+		'''
+		pass
 
 class MayaSphere(MayaPrimitive):
 	def __init__(self, msvPrimitive, mayaJoint):
@@ -246,6 +301,12 @@ class MayaSphere(MayaPrimitive):
 									   subdivisionsX=10, subdivisionsY=10, 
 									   ch=False, name=self.baseName )
 		MayaPrimitive.build(self)
+
+	def dump(self):
+		'''	axis:			creator axis
+			radius:			creator radius
+		'''
+		pass
 	
 class MayaBox(MayaPrimitive):
 	def __init__(self, msvPrimitive, mayaJoint):
@@ -255,6 +316,11 @@ class MayaBox(MayaPrimitive):
 		[ self.name ] = mc.polyCube( w=self._msvPrimitive.size[0], h=self._msvPrimitive.size[1], d=self._msvPrimitive.size[2],
 									 ch=False, name=self.baseName )
 		MayaPrimitive.build(self)
+		
+	def dump(self):
+		'''	size:			creator width, heigh, and depth
+		'''
+		pass
 	
 class MayaDisc(MayaPrimitive):
 	def __init__(self, msvPrimitive, mayaJoint):
@@ -266,6 +332,13 @@ class MayaDisc(MayaPrimitive):
 								  	  	 subdivisionsX=10, subdivisionsY=1, subdivisionsZ=10, 
 								  	  	 roundCap=False, ch=False, name=self.baseName )
 		MayaPrimitive.build(self)
+		
+	def dump(self):
+		'''	axis:			creator axis
+			radius:			creator radius
+			length:			creator height
+		'''
+		pass
 
 class MayaJoint:
 	def __init__(self, agent, joint, factory):
@@ -323,6 +396,18 @@ class MayaJoint:
 
 		mc.setAttr((self.name + ".rotateOrder"), kRotateOrder2Enum[self.rotateOrderString(False)])
 
+		# For now we don't change the Maya 'joint' node's degrees of freedom,
+		# so store the info in a dynamic attribute so it can be written to
+		# disk later
+		mc.addAttr( self.name, longName='msvDOF', attributeType='bool', multi=True )
+		MayaUtil.setMultiAttr( "%s.msvDOF" % self.name, self._joint.dof ) 
+	
+		# Data from the .cdl file that we don't currently represent in Maya
+		# (but that we want to hang on to so it can be written back out to
+		# disk).
+		mc.addAttr( self.name, longName='msvLeftovers', dataType='string' )
+		mc.setAttr( "%s.msvLeftovers" % self.name, self._joint.leftovers, type='string' )
+
 		if self._joint.translate:
 			mc.move( self._joint.translate[0], self._joint.translate[1], self._joint.translate[2],
 					 self.name, objectSpace=True, relative=True )
@@ -330,18 +415,6 @@ class MayaJoint:
 		if self._joint.transform:
 			mc.xform( self.name, matrix=self._joint.transform, objectSpace=True, relative=True)
 			
-		# Use the 'joint' command to set the rotation degrees of freedom.
-		# However since joints don't have a built-in concept of translation
-		# degrees of freedom, just lock the translate channel attributes
-		#
-		#rdof = "%s%s%s" % (dof['rx'], dof['ry'], dof['rz'])
-		#mc.joint( joint, e=True, dof=rdof )
-
-		#for tdof in ( 'tx', 'ty', 'tz' ):
-			# Only lock of the entry is ""
-			#lock = not bool(dof[tdof])
-			#mc.setAttr( joint + '.' + tdof, lock=lock )
-	
 		if self._joint.parent:
 			[self.name] = mc.parent(self.name, self.agent.mayaJoint(self._joint.parent).name, relative=True)
 			[self.name] = mc.ls(self.name, long=True)
@@ -356,6 +429,20 @@ class MayaJoint:
 		
 		if not self.agent.rootJoint:
 			self.agent.registerRootJoint( self )
+			
+	def dump(self):
+		'''	name:			joint name
+			parent:			joint parent
+			dof:			joint msvDOF attr
+			primitive:		see MayaPrimitive
+			order:			joint rotateOrder attr
+			actionOffset:	????
+			translate:		joint translation
+			transform:		joint transform
+			scaleVar:		????
+			leftovers:		joint msvLeftovers attr
+		'''
+		pass
 			
 	def buildPrimitive(self, instance):
 		self.primitive = MayaPrimitive.create( self._joint.primitive, self )

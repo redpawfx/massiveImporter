@@ -29,36 +29,12 @@ from maya.OpenMaya import *
 import ns.py
 import ns.py.Errors as Errors
 
-import ns.maya.msv
+import ns.maya.msv.MayaFactory as MayaFactory
 import ns.bridge.data.MasSpec as MasSpec
 import ns.bridge.io.MasWriter as MasWriter
 
-def getGroupsSet(create=False):
-	'''The groups set is a set which contains all of the sets representing
-	   massive groups.'''
-	# "massive_groups" set contains one set per Massive group. Each set
-	# member corresponds to a Massive locator. By default Maya locators
-	# are used.
-	groupsSet = "massive_groups"
-	if not mc.objExists(groupsSet):
-		if create:
-			# The "massive_grups" partition must exist
-			groupsSet = mc.sets(name=groupsSet, empty=True)
-			mc.addAttr(groupsSet, longName="massive", attributeType="long")
-		else:
-			raise Errors.Error("Scene does not contain any Massive groups.")
-	elif "objectSet" != mc.nodeType(groupsSet):
-		# For now we bail if the user has a non-partition node called
-		# "massive_groups"
-		raise Errors.Error("An object named '%s' already exists and is not a set. Please rename it." % groupsSet)
-	
-	return groupsSet;
 
-def isGroupsSet(set):
-	return ("objectSet" == mc.nodeType(set) and
-			"massive_groups" == set)
-
-def createGroup(group, force):
+def createGroup(factory, group, force):
 	if not force and mc.objExists(group):
 		# For now we bail if the user has a non-set node which
 		# has a name class with in incoming massive group
@@ -72,9 +48,11 @@ def createGroup(group, force):
 		# group.
 		group = mc.sets(empty=True, name=group)
 		mc.addAttr(group, longName="massive", attributeType="long")
-		mc.sets(group, add=getGroupsSet(True))
+		mc.sets(group, add=factory.getGroupsSet(True))
 		
-def addLocators(group="", locators=[]):
+def addLocators(factory=None, group="", locators=[]):
+	if not factory: factory = MayaFactory.MayaFactory()
+	
 	if not group and not locators:
 		selection = mc.ls(sl=True)
 		if len(selection) < 2:
@@ -87,7 +65,7 @@ def addLocators(group="", locators=[]):
 			raise Errors.BadArgumentError("Please select some objects to turn into Massive locators, and a massive group.")
 		if not isGroup(group):
 			raise Errors.BadArgumentError("%s is not a massive group." % group)
-		if isGroupsSet(group):
+		if factory.isGroupsSet(group):
 			raise Errors.BadArgumentError("%s can not have locators added to it." % group)
 		for locator in locators:
 			try:
@@ -118,7 +96,7 @@ def isGroup(group):
 	return ("objectSet" == mc.nodeType(group) and
 			mc.objExists("%s.massive" % group))
 
-def build( mas ):
+def build(factory, mas):
 	'''Given a MasSpec, build the described Massive setup using Maya
 	   objects. For now only locators are supported.
 	'''
@@ -139,7 +117,7 @@ def build( mas ):
 	for g in mas.groups:
 		if not g:
 			continue
-		createGroup(g.name, force=False)
+		createGroup(factory, g.name, force=False)
 		# Initialize mayaGroupLocators with the pre-existing set
 		# members.
 		locators = mc.sets(g.name, query=True)
@@ -167,7 +145,7 @@ def build( mas ):
 			# the number of pre-existing Maya locators, create
 			# a new Maya locator
 			mayaLocator = mc.spaceLocator()
-			addLocators(mayaGroup, mayaLocator)
+			addLocators(factory, mayaGroup, mayaLocator)
 			created += 1
 		mayaGroupCounts[groupId] += 1
 		# Update the position of the Maya locator
@@ -176,13 +154,16 @@ def build( mas ):
 	print >> sys.stderr, "Updated %d locators" % updated
 
 def dump( fileHandle ):
-	'''Look through the Maya scene and dump to fileHandle, in .mas format,
-	   any Maya objects that represent Massive entitities. For now only
-	   Massive groups and locators are supported.'''
+	'''	Look through the Maya scene and dump to fileHandle, in .mas format,
+	   	any Maya objects that represent Massive entitities. For now only
+	   	Massive groups and locators are supported.'''
+	   
+	factory = MayaFactory.MayaFactory()
+	   
 	# Massive groups are represented by Maya sets of the same
 	# name stored in the "massive_groups" set. If no "massive_groups" set
 	# exists, bail.
-	groupsSet = getGroupsSet(False)
+	groupsSet = factory.getGroupsSet(False)
 
 	# Get a list of all Massive groups
 	groups = mc.sets( groupsSet, query=True )

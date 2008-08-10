@@ -75,6 +75,13 @@ def setDouble3Attr( double3Aattr, double3 ):
 	arg = " ".join(stringDouble3)
 	mel.eval('setAttr "%s" -type "double3" %s' % (double3Aattr, arg))
 
+def addColorAttr( node, attr ):
+	mc.addAttr(node, longName=attr, attributeType='float3', usedAsColor=True)
+	mc.addAttr(node, longName=("%sR" % attr), attributeType='float', parent=attr)
+	mc.addAttr(node, longName=("%sG" % attr), attributeType='float', parent=attr)
+	mc.addAttr(node, longName=("%sB" % attr), attributeType='float', parent=attr)
+	
+
 def hsvToRgb( hsv ):
 	return mel.eval( 'hsv_to_rgb <<%f, %f, %f>>' % (hsv[0], hsv[1], hsv[2]) )
 

@@ -36,6 +36,7 @@ def isTranslateEnum( channelEnum ):
 	return channelEnum < kRX
 
 class Material:
+	'''Imported'''
 	def __init__(self):
 		self.name = ""
 		self.id = 0
@@ -51,6 +52,7 @@ class Material:
 		self.diffuseSpace = "hsv"
 		self.roughness = 0.02
 		self.roughnessVar = ""
+		self.leftovers = ""
 
 class Geometry:
 	def __init__(self):
@@ -60,6 +62,7 @@ class Geometry:
 		self.material = 1
 		self.weightsData = None
 		self.attach = ""
+		self.leftovers = ""
 	
 	def deformers( self ):
 		if self.weightsData:
@@ -78,6 +81,7 @@ class Option:
 		self.name = ""
 		self.var = ""
 		self.inputs = []
+		self.leftovers = ""
 
 class GeoDB:
 	def __init__(self):
@@ -161,6 +165,7 @@ class Action:
 		self.name = ""
 		self.curves = {}
 		self.maxPoints = 0
+		self.leftovers = ""
 	
 	def addCurve( self, curve ):
 		if curve.type == "linear":
@@ -189,6 +194,7 @@ class Action:
   		return str
 
 class Primitive:
+	'''Imported'''
 	def __init__(self, joint):
 		self.joint = joint
 		self.rotate = [ 0.0, 0.0, 0.0 ]
@@ -196,28 +202,33 @@ class Primitive:
 		self.centre = [ 0.0, 0.0, 0.0 ]
 					
 class Tube(Primitive):
+	'''Imported'''
 	def __init__(self, joint):
 		Primitive.__init__(self, joint)
 		self.radius = 1.0
 		self.length = 1.0		
 
 class Sphere(Primitive):
+	'''Imported'''
 	def __init__(self, joint):
 		Primitive.__init__(self, joint)
 		self.radius = 1.0
 
 class Box(Primitive):
+	'''Imported'''
 	def __init__(self, joint):
 		Primitive.__init__(self, joint)
 		self.size = [ 1.0, 1.0, 1.0 ]
 	
 class Disc(Primitive):
+	'''Imported'''
 	def __init__(self, joint):
 		Primitive.__init__(self, joint)
 		self.radius = 1.0
 		self.length = 1.0
 
 class Joint:
+	'''Imported'''
  	def __init__(self, agentSpec):
  		self.name = ""
  		self.parent = ""
@@ -228,7 +239,8 @@ class Joint:
  		self.translate = []
  		self.transform = []
 		self.scaleVar = ""
- 		self.agentSpec = agentSpec	
+ 		self.agentSpec = agentSpec
+ 		self.leftovers = ""
 
 class Variable:
 	def __init__(self):
@@ -258,6 +270,7 @@ class AgentSpec:
 		self.variables = {}
 		# map Massive joint name to the joint object
 		self.joints = {}
+		self.leftovers = ""
 		
 		# private
 		self._rootPath = ""

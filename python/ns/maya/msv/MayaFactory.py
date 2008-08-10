@@ -59,6 +59,53 @@ class MayaFactory:
 			mc.setAttr( "%s.visibility" % self._primitiveCacheGroup, False )
 		return self._primitiveCacheGroup
 	
+	def getGroupsSet(self, create=False):
+		'''The groups set is a set which contains all of the sets representing
+		   massive groups.'''
+		# "massive_groups" set contains one set per Massive group. Each set
+		# member corresponds to a Massive locator. By default Maya locators
+		# are used.
+		groupsSet = "massive_groups"
+		if not mc.objExists(groupsSet):
+			if create:
+				# The "massive_grups" partition must exist
+				groupsSet = mc.sets(name=groupsSet, empty=True)
+				mc.addAttr(groupsSet, longName="massive", attributeType="long")
+			else:
+				raise Errors.Error("Scene does not contain any Massive groups.")
+		elif "objectSet" != mc.nodeType(groupsSet):
+			# For now we bail if the user has a non-partition node called
+			# "massive_groups"
+			raise Errors.Error("An object named '%s' already exists and is not a set. Please rename it." % groupsSet)
+		
+		return groupsSet
+	
+	def isGroupsSet(self, set):
+		return ("objectSet" == mc.nodeType(set) and
+				"massive_groups" == set)	
+	
+	def getAgentsSet(self, create=False):
+		'''The agents set is a set which contains all of the MayaAgents.'''
+		# "massive_agents" set contains the root transform of each MayaAgent.
+		agentsSet = "massive_agents"
+		if not mc.objExists(agentsSet):
+			if create:
+				# The "massive_grups" partition must exist
+				agentsSet = mc.sets(name=agentsSet, empty=True)
+				mc.addAttr(agentsSet, longName="massive", attributeType="long")
+			else:
+				raise Errors.Error("Scene does not contain any Massive agents.")
+		elif "objectSet" != mc.nodeType(agentsSet):
+			# For now we bail if the user has a non-partition node called
+			# "massive_groups"
+			raise Errors.Error("An object named '%s' already exists and is not a set. Please rename it." % agentsSet)
+		
+		return agentsSet
+	
+	def addAgent(self, mayaAgent):
+		agentsSet = self.getAgentsSet(True)
+		mc.sets(mayaAgent.agentGroup(), add=agentsSet)
+	
 	def importObj(self, file, groupName):
 		'''Import and prep an obj file. This is used to import the terrain
 		   object as well as the agent geometry objects.'''
@@ -140,10 +187,10 @@ class MayaFactory:
 
 		mayaPrimitive.name = mc.rename( primitive, mayaPrimitive.baseName )
 	
-	def buildMaterial(self, material):
+	def buildMaterial(self, mayaMaterial):
 		key = ""
-		if material.colorMap:
-			key = material.colorMap
+		if mayaMaterial.colorMap:
+			key = mayaMaterial.colorMap
 		else:
 			# Currently the only variation that is supported is in the
 			# color map. If no color map is specified than it's safe
@@ -152,7 +199,7 @@ class MayaFactory:
 			# a material with a color map may actually map to several
 			# Maya shading groups)
 			#
-			key = str(material.id())
+			key = str(mayaMaterial.id())
 		
 		sg = ""
 		try:
@@ -160,19 +207,47 @@ class MayaFactory:
 		except:
 			# shadingNode doesn't work right in batch mode, so do it manually
 			#
-			shader = mc.createNode(material.materialType, name=material.name())
+			shader = mc.createNode(mayaMaterial.materialType, name=mayaMaterial.name())
+			
+			# Data that doesn't make it into the Maya scene but that we have
+			# to hold onto so that we can write it back out to disk
+			mc.addAttr( shader, longName='msvId', attributeType='long' )
+			mc.setAttr( "%s.msvId" % shader, mayaMaterial.id() )
+			mc.addAttr( shader, longName='msvSpecularVar', dataType='string' )
+			mc.setAttr( "%s.msvSpecularVar" % shader, mayaMaterial.material.specularVar, type='string' )
+			mc.addAttr( shader, longName='msvAmbientVar', dataType='string' )
+			mc.setAttr( "%s.msvAmbientVar" % shader, mayaMaterial.material.ambientVar, type='string' )
+			mc.addAttr( shader, longName='msvDiffuseVar', dataType='string' )
+			mc.setAttr( "%s.msvDiffuseVar" % shader, mayaMaterial.material.diffuseVar, type='string' )
+			mc.addAttr( shader, longName='msvSpecularSpace', dataType='string' )
+			mc.setAttr( "%s.msvSpecularSpace" % shader, mayaMaterial.material.specularSpace, type='string' )
+			mc.addAttr( shader, longName='msvAmbientSpace', dataType='string' )
+			mc.setAttr( "%s.msvAmbientSpace" % shader, mayaMaterial.material.ambientSpace, type='string' )
+			mc.addAttr( shader, longName='msvDiffuseSpace', dataType='string' )
+			mc.setAttr( "%s.msvDiffuseSpace" % shader, mayaMaterial.material.diffuseSpace, type='string' )
+			mc.addAttr( shader, longName='msvRoughnessVar', dataType='string' )
+			mc.setAttr( "%s.msvRoughnessVar" % shader, mayaMaterial.material.roughnessVar, type='string' )
+			mc.addAttr( shader, longName='msvLeftovers', dataType='string' )
+			mc.setAttr( "%s.msvLeftovers" % shader, mayaMaterial.material.leftovers, type='string' )
+
+			if "blinn" != mayaMaterial.materialType:
+				MayaUtil.addColorAttr(shader, 'msvSpecular')
+				MayaUtil.setDouble3Attr("%s.msvSpecular" % shader, mayaMaterial.specular)
+				mc.addAttr( shader, longName='msvRoughness', attributeType='float' )
+				mc.setAttr( "%s.msvRoughness" % shader, mayaMaterial.roughness )
+			
 			mc.connectAttr( "%s.msg" % shader, ":defaultShaderList1.s", nextAvailable=True)
 			
 			sg = mc.sets(renderable=True, empty=True, name="%sSG" % shader)
 			mc.connectAttr( "%s.outColor" % shader, "%s.surfaceShader" % sg, force=True )	
-			MayaUtil.setDouble3Attr( "%s.ambientColor" % shader, material.ambient )
-			mc.setAttr( "%s.diffuse" % shader, material.diffuse )
+			MayaUtil.setDouble3Attr( "%s.ambientColor" % shader, mayaMaterial.ambient )
+			mc.setAttr( "%s.diffuse" % shader, mayaMaterial.diffuse )
 			
-			if "blinn" == material.materialType:
-				MayaUtil.setDouble3Attr( "%s.specularColor" % shader, material.specular )
-				mc.setAttr( "%s.specularRollOff" % shader, material.roughness )			
+			if "blinn" == mayaMaterial.materialType:
+				MayaUtil.setDouble3Attr( "%s.specularColor" % shader, mayaMaterial.specular )
+				mc.setAttr( "%s.specularRollOff" % shader, mayaMaterial.roughness )			
 			
-			if material.colorMap:
+			if mayaMaterial.colorMap:
 				file = mc.createNode("file", name="%sFile" % shader)
 				mc.connectAttr( "%s.msg" % file, ":defaultTextureList1.tx", nextAvailable=True)
 				place = mc.createNode("place2dTexture", name="%sPlace" % shader)
@@ -199,7 +274,7 @@ class MayaFactory:
 			
 				mc.connectAttr( "%s.outColor" % file, "%s.color" % shader, force=True )
 
-				mc.setAttr( "%s.fileTextureName" % file, "%s" % material.colorMap, type="string" )
+				mc.setAttr( "%s.fileTextureName" % file, "%s" % mayaMaterial.colorMap, type="string" )
 			
 			self.materialCache[key] = sg
 		

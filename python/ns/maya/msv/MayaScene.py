@@ -33,6 +33,7 @@ import ns.maya.msv.MayaPlacement as MayaPlacement
 import ns.maya.msv.MayaFactory as MayaFactory
 import ns.maya.msv.MayaSceneAgent as MayaSceneAgent
 
+
 class MayaScene:
 	def __init__(self):
 		self._factory = MayaFactory.MayaFactory()
@@ -41,7 +42,7 @@ class MayaScene:
 		if scene.mas().terrainFile:
 			self._factory.importObj(scene.mas().terrainFile, "terrain")
 		
-		MayaPlacement.build(scene.mas())
+		MayaPlacement.build(self._factory, scene.mas())
 		
 		for agentSpec in scene.agentSpecs():
 			agent = Agent.Agent(instanced=False)
@@ -49,6 +50,7 @@ class MayaScene:
 			agent.name = agentSpec.agentType
 			mayaAgent = MayaSceneAgent.MayaSceneAgent(agent, self._factory, scene)
 			mayaAgent.build(agentOptions)
+			self._factory.addAgent(mayaAgent)
 		
 		self._factory.cleanup()
 		

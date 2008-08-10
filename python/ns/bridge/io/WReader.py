@@ -32,6 +32,9 @@ class WReader:
 		self.deformers = []
 		self.weights = []
 		
+	def name(self):
+		return self._fullName
+		
  	def read( self, fullName ):
  		'''Load skin weights from a Massive .w (weights) file'''
  		

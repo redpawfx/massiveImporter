@@ -41,15 +41,15 @@ def _handleGeometry(fileHandle, tokens, agentSpec):
 	geometry = AgentSpec.Geometry()
 	if len(tokens) > 1:
 		geometry.name = tokens[1]
-	#file filename	The .obj file referenced by this geometry node.
-	#flip_normals	Specifies whether normals should be flipped.
-	#id n	Specifies the node's id number.
-	#material n	The id of the material node assigned to this geometry node.
-	#rotate x y z	Rotations applied to this geometry in Massive.
-	#scale x y z	Scale transformations applied to this geometry in Massive.
-	#translate x y z	Translation applied to this geometry in Massive.
-	#translate x y	Specifies the location of the current node's icon in the icon work area.
-	# weights_file filename the .w file storing the skinning weights
+	#file filename			The .obj file referenced by this geometry node.
+	#flip_normals			Specifies whether normals should be flipped.
+	#id n					Specifies the node's id number.
+	#material n				The id of the material node assigned to this geometry node.
+	#rotate x y z			Rotations applied to this geometry in Massive.
+	#scale x y z			Scale transformations applied to this geometry in Massive.
+	#translate x y z		Translation applied to this geometry in Massive.
+	#translate x y			Specifies the location of the current node's icon in the icon work area.
+	#weights_file filename	the .w file storing the skinning weights
 	
 	tokens = []
 	for line in fileHandle:
@@ -69,11 +69,11 @@ def _handleGeometry(fileHandle, tokens, agentSpec):
 			elif tokens[0] == "attach":
 				geometry.attach = tokens[1]
 			else:
-				pass
+				geometry.leftovers += line
 	
 	agentSpec.geoDB.addGeometry(geometry)
 	
-	return tokens
+	return line
 
 def _handleCloth(fileHandle, tokens, agentSpec):
 	'''Handle one piece of cloth. Since cloth isn't handled yet, treat it
@@ -113,11 +113,11 @@ def _handleCloth(fileHandle, tokens, agentSpec):
 			elif tokens[0] == "material":
 				geometry.material = int(tokens[1])
 			else:
-				pass
+				geometry.leftovers = ""
 	
 	agentSpec.geoDB.addGeometry(geometry)
 	
-	return tokens
+	return line
 
 def _handleMaterial(fileHandle, tokens, agentSpec):
 	'''Handle one material'''
@@ -125,18 +125,29 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 	material = AgentSpec.Material()
 	if len(tokens) > 1:
 		material.name = tokens[1]
-	#ambient value1 value2 value3 colourspace	Specifies the OpenGL ambient value of the material. Example:
-	#ambient 0.5 0.5 0.7 hsv
-	#colour_map filename type	Specifies the OpenGL ambient value of the material. Example:
-	#colour_map /massive/agent1/maps/map1.tif rgb
-	#diffuse value1 value2 value3 colourspace	Specifies the OpenGL diffuse value of the material. Example:
-	#diffuse 0.5 0.5 0.7 hsv
-	#id n	Specifies the node's id number.
-	#rman_displacement shader name1 [value1] name2 [value2]...	Specifies RenderMan displacement shader assigned to this material and its specified parameter values.
-	#rman_surface shader name1 [value1] name2 [value2]...	Specifies RenderMan surface shader assigned to this material and its specified parameter values.
-	#specular value1 value2 value3 colourspace	Specifies the OpenGL specular value of the material. Example:
-	#specular 0.5 0.5 0.7 hsv
-	#translate x y	Specifies the location of the current node's icon in the icon work area.
+	#ambient value1 value2 value3 colourspace
+	#	Specifies the OpenGL ambient value of the material. Example:
+	#		ambient 0.5 0.5 0.7 hsv
+	#colour_map filename type
+	#	Specifies the OpenGL ambient value of the material. Example:
+	#		colour_map /massive/agent1/maps/map1.tif rgb
+	#diffuse value1 value2 value3 colourspace
+	#	Specifies the OpenGL diffuse value of the material. Example:
+	#		diffuse 0.5 0.5 0.7 hsv
+	#id n	
+	#	Specifies the node's id number.
+	#rman_displacement shader name1 [value1] name2 [value2]...
+	#	Specifies RenderMan displacement shader assigned to this material and
+	#	its specified parameter values.
+	#rman_surface shader name1 [value1] name2 [value2]...
+	#	Specifies RenderMan surface shader assigned to this material and its
+	#	specified parameter values.
+	#specular value1 value2 value3 colourspace
+	#	Specifies the OpenGL specular value of the material. Example:
+	#		specular 0.5 0.5 0.7 hsv
+	#translate x y
+	#	Specifies the location of the current node's icon in the icon work
+	#	area.
 	
 	tokens = []
 	for line in fileHandle:
@@ -150,6 +161,8 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 				material.id = int(tokens[1])
 			elif tokens[0] == "ambient":
 				for i in range(1,4):
+					# color component is either a float value or a
+					# variable/expression
 					try:
 						material.ambient[i-1] = float(tokens[i])
 					except:
@@ -158,6 +171,8 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 					material.ambientSpace = tokens[4]
 			elif tokens[0] == "diffuse":
 				for i in range(1,4):
+					# color component is either a float value or a
+					# variable/expression
 					try:
 						material.diffuse[i-1] = float(tokens[i])
 					except:
@@ -166,6 +181,8 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 					material.diffuseSpace = tokens[4]
 			elif tokens[0] == "specular":
 				for i in range(1,4):
+					# color component is either a float value or a
+					# variable/expression
 					try:
 						material.specular[i-1] = float(tokens[i])
 					except:
@@ -173,12 +190,14 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 				if len(tokens) > 4:
 					material.specularSpace = tokens[4]
 			elif tokens[0] == "roughness":
+					# roughness is either a float value or a
+					# variable/expression
 					try:
 						material.roughness = float(tokens[1])
 					except:
 						material.roughnessVar = tokens[1]
 			else:
-				pass
+				material.leftovers += line
 		
 	numMaterials = len(agentSpec.materialData)
 	if material.id >= numMaterials:
@@ -186,7 +205,7 @@ def _handleMaterial(fileHandle, tokens, agentSpec):
 	
 	agentSpec.materialData[material.id] = material
 	
-	return tokens
+	return line
 	
 def _handleOption(fileHandle, tokens, agentSpec):
 	'''Handle one option node'''
@@ -194,10 +213,16 @@ def _handleOption(fileHandle, tokens, agentSpec):
 	option = AgentSpec.Option()
 	if len(tokens) > 1:
 		option.name = "_".join(tokens[1:])
-	# attach n1 n2 n3...	Specifies id numbers of segment nodes this option node is bound to.
-	# inputs n1 n2 n3...	Specifies id numbers of geometry or cloth nodes attached to this option node.
-	# translate x y	Specifies the location of the current node's icon in the icon work area.
-	# var name	Specifies name of agent variable driving this option node.		
+	# attach n1 n2 n3...
+	#	Specifies id numbers of segment nodes this option node is bound to.
+	# inputs n1 n2 n3...
+	#	Specifies id numbers of geometry or cloth nodes attached to this
+	#	option node.
+	# translate x y
+	#	Specifies the location of the current node's icon in the icon work
+	#	area.
+	# var name
+	#	Specifies name of agent variable driving this option node.		
 	tokens = []
 	for line in fileHandle:
 		tokens = line.strip().split()
@@ -218,15 +243,16 @@ def _handleOption(fileHandle, tokens, agentSpec):
 					for input in tokens[1:]:
 						option.inputs.append(agentSpec.geoDB.geometryById(int(input)))
 			else:
-				pass
+				option.leftovers += ""
 		
 	agentSpec.geoDB.addOption( option )
 	
-	return tokens
+	return line
 		
 def _handleVariable(fileHandle, tokens, agentSpec):
 	'''Handle a variable Spec'''
 	
+	# name default_value [min_value max_value] expression
 	variable = AgentSpec.Variable()
 	variable.name = tokens[1]
 	variable.default = float(tokens[2])
@@ -236,7 +262,7 @@ def _handleVariable(fileHandle, tokens, agentSpec):
 		variable.expression = tokens[7]
 	
 	agentSpec.variables[variable.name] = variable
-	return fileHandle.next().strip().split()
+	return fileHandle.next()
 
 def _handleSegment(fileHandle, tokens, agentSpec):
 	'''Handle one segment'''
@@ -252,7 +278,6 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 	#centre x y z 	Offset the primitive by x y z in segment space.
 	centre = []
 	#density value 	Density of the segment. (Mass is derived from this value.)
-	density = 1.0
 	#include filename 	Specifies the inclusion of the cdl file called filename.
 	#length l 	Specifies the length of a tube or line primitive.
 	length = 1.0
@@ -311,8 +336,6 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 				bone_rotate = (float(tokens[1]), float(tokens[2]), float(tokens[3]))
 			elif tokens[0] == "centre":
 				centre = [ float(tokens[1]), float(tokens[2]), float(tokens[3]) ]
-			elif tokens[0] == "density":
-				density = tokens[1]
 			elif tokens[0] == "length":
 				length = tokens[1]
 			elif tokens[0] == "order":
@@ -364,7 +387,7 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 				# bind pose before the action is applied
 				joint.actionOffset = [ -float(tokens[1]), -float(tokens[2]), -float(tokens[3]) ]
 			else:
-				pass
+				joint.leftovers += line
 			
 	if "box" == primitive:
 		joint.primitive = AgentSpec.Box(joint)
@@ -396,7 +419,7 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 	#
 	agentSpec.jointData.append( joint )
 	
-	return tokens
+	return line
 			
 			
 def _handleObject(fileHandle, tokens, agentSpec):
@@ -404,9 +427,7 @@ def _handleObject(fileHandle, tokens, agentSpec):
 	
 	agentSpec.agentType = tokens[1]
 
-	line = fileHandle.next()
-	tokens = line.strip().split()
-	return tokens
+	return fileHandle.next()
 
 
 def _handleCurve(fileHandle, tokens, action):
@@ -448,43 +469,46 @@ def _handleAction(fileHandle, tokens, agentSpec):
 			if tokens[0] == "curve":
 				_handleCurve(fileHandle, tokens, action)
 			else:
-				pass
+				action.leftovers += line
 	
 	agentSpec.actions[action.name] = action
 	
-	return tokens
+	return line
 	
 def _handleBindPose(fileHandle, tokens, agentSpec):
 	'''Store the name of the bind pose file'''
 	agentSpec.bindPoseFile = _resolvePath( agentSpec.rootPath(), tokens[1] )
-	return fileHandle.next().strip().split()
+	return fileHandle.next()
 
 def _process(fileHandle, line, agentSpec):
 	tokens = line.strip().split()
 	while tokens:
 		if tokens[0] == "variable":
-			tokens = _handleVariable(fileHandle, tokens, agentSpec)
+			line = _handleVariable(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "scale_var":
 			agentSpec.scaleVar = tokens[1]
-			tokens = fileHandle.next().strip().split()
+			line = fileHandle.next()
 		elif tokens[0] == "segment" :
-			tokens = _handleSegment(fileHandle, tokens, agentSpec)
+			line = _handleSegment(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "material":
-			tokens = _handleMaterial(fileHandle, tokens, agentSpec)
+			line = _handleMaterial(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "cloth":
-			tokens = _handleCloth(fileHandle, tokens, agentSpec)
+			line = _handleCloth(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "geometry":
-			tokens = _handleGeometry(fileHandle, tokens, agentSpec)
+			line = _handleGeometry(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "option":
-			tokens = _handleOption(fileHandle, tokens, agentSpec)
+			line = _handleOption(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "object":
-			tokens = _handleObject(fileHandle, tokens, agentSpec)
+			line = _handleObject(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "action":
-			tokens = _handleAction(fileHandle, tokens, agentSpec)
+			line = _handleAction(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "bind_pose":
-			tokens = _handleBindPose(fileHandle, tokens, agentSpec)
+			line = _handleBindPose(fileHandle, tokens, agentSpec)
 		else:
+			agentSpec.leftovers += line
 			break
+		
+		tokens = line.strip().split()
 	
 	
 def read(cdlFile):
