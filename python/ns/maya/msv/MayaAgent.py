@@ -738,5 +738,90 @@ class MayaAgent:
 		# Has to happen after skin is bound
 		self._scaleJoints()
 		self._zeroPose = mc.dagPose(self.rootJoint.name, save=True, name=(self.name() + "Zero"))
-					
+		
+		agentGroup = self.agentGroup()
+		mc.addAttr( agentGroup, longName='msvCdlFile', dataType='string' )
+		mc.setAttr( "%s.msvCdlFile" % agentGroup, self._agent.agentSpec.cdlFile, type='string' )
+		mc.addAttr( agentGroup, longName='msvUnits', dataType='string' )
+		mc.setAttr( "%s.msvUnits" % agentGroup, self._agent.agentSpec.units, type='string' )
+		mc.addAttr( agentGroup, longName='msvId', attributeType='long' )
+		mc.setAttr( "%s.msvId" % agentGroup, self._agent.agentSpec.id )
+		mc.addAttr( agentGroup, longName='msvColor', attributeType='float' )
+		mc.setAttr( "%s.msvColor" % agentGroup, self._agent.agentSpec.color )
+		mc.addAttr( agentGroup, longName='msvAngles', dataType='string' )
+		mc.setAttr( "%s.msvAngles" % agentGroup, self._agent.agentSpec.angles, type='string' )
+		mc.addAttr( agentGroup, longName='msvBindPoseFile', dataType='string' )
+		mc.setAttr( "%s.msvBindPoseFile" % agentGroup, self._agent.agentSpec.bindPoseFile, type='string' )
+		mc.addAttr( agentGroup, longName='msvAgentType', dataType='string' )
+		mc.setAttr( "%s.msvAgentType" % agentGroup, self._agent.agentSpec.agentType, type='string' )
+		mc.addAttr( agentGroup, longName='msvScaleVar', dataType='string' )
+		mc.setAttr( "%s.msvScaleVar" % agentGroup, self._agent.agentSpec.scaleVar, type='string' )
+		mc.addAttr( agentGroup, longName='msvLeftovers', dataType='string' )
+		mc.setAttr( "%s.msvLeftovers" % agentGroup, self._agent.agentSpec.leftovers, type='string' )
 
+		# Add the variable descriptions to a multi-compound attribute
+		mc.addAttr( agentGroup, longName='msvVariables',
+					attributeType='compound', numberOfChildren=5, multi=True )
+		mc.addAttr( agentGroup, longName='msvVarName',
+					dataType='string', parent='msvVariables' )
+		mc.addAttr( agentGroup, longName='msvVarDefault',
+					attributeType='float', parent='msvVariables' )
+		mc.addAttr( agentGroup, longName='msvVarMin',
+					attributeType='float', parent='msvVariables' )
+		mc.addAttr( agentGroup, longName='msvVarMax',
+					attributeType='float', parent='msvVariables' )
+		mc.addAttr( agentGroup, longName='msvVarExpression',
+					dataType='string', parent='msvVariables' )
+		values = [ '"%s"' % v.name for v in self._agent.agentSpec.variables.values() ]
+		MayaUtil.setMultiAttr( "%s.msvVariables" % agentGroup, values, "msvVarName", "string" ) 
+		values = [ v.default for v in self._agent.agentSpec.variables.values() ]
+		MayaUtil.setMultiAttr( "%s.msvVariables" % agentGroup, values, "msvVarDefault" ) 
+		values = [ v.min for v in self._agent.agentSpec.variables.values() ]
+		MayaUtil.setMultiAttr( "%s.msvVariables" % agentGroup, values, "msvVarMin" ) 
+		values = [ v.max for v in self._agent.agentSpec.variables.values() ]
+		MayaUtil.setMultiAttr( "%s.msvVariables" % agentGroup, values, "msvVarMax" ) 
+		values = [ '"%s"' % v.expression for v in self._agent.agentSpec.variables.values() ]
+		MayaUtil.setMultiAttr( "%s.msvVariables" % agentGroup, values, "msvVarExpression", "string" ) 
+					
+def dump(agentSpec, target):
+	''' TODO: what if users want to change the bind pose?
+		TODO: should msvCdlFile be updated if they export the agent to a
+			  new file?
+	
+		cdlFile:			msvCdlFile attribute on agentGroup
+		units:				msvUnits attribute on agentGroup
+		id:					msvId attribute on agentGroup
+		color:				msvColor attribute on agentGroup
+		angles:				msvAngles attribute on agentGroup
+		bindPoseFile:		msvBindPoseFile attribute on agentGroup
+		agentType:			msvAgentType attribute on agentGroup
+		scaleVar:			msvScaleVar attribute on agentGroup
+		bindPoseData:		not needed (stored in bind pose file)
+		jointData:			delegate to MayaJoint
+		geoDB:				delegate to MayaGeometry
+		materialData:		delegate to MayaMaterial
+		actions:			delegate to MayaAction
+		variables:			msvVariables multi compound attribute on agentGroup
+		joints:				not needed (redundant with jointData)
+		leftovers:			msvLeftovers attribute on agentGroup
+	'''
+	
+	agentSpec.cdlFile = mc.getAttr("%s.msvCdlFile" % target)
+	agentSpec.units = mc.getAttr("%s.msvUnits" % target)
+	agentSpec.agentType = mc.getAttr("%s.msvAgentType" % target)
+	agentSpec.id = mc.getAttr("%s.msvId" % target)
+	agentSpec.color = mc.getAttr("%s.msvColor" % target)
+	agentSpec.angles = mc.getAttr("%s.msvAngles" % target)
+	agentSpec.bindPoseFile = mc.getAttr("%s.msvBindPoseFile" % target)
+	agentSpec.scaleVar = mc.getAttr("%s.msvScaleVar" % target)
+	agentSpec.leftovers = mc.getAttr("%s.msvLeftovers" % target)
+	
+	numVars = mc.getAttr("%s.msvVariables" % target, size=True)
+	for i in range(numVars):
+		var = AgentSpec.Variable()
+		var.name = mc.getAttr("%s.msvVariables[%s].msvVarName" % (target, i))
+		var.default = mc.getAttr("%s.msvVariables[%s].msvVarDefault" % (target, i))
+		var.min = mc.getAttr("%s.msvVariables[%s].msvVarMin" % (target, i))
+		var.max = mc.getAttr("%s.msvVariables[%s].msvVarMax" % (target, i))
+		var.expression = mc.getAttr("%s.msvVariables[%s].msvVarExpression" % (target, i)) or ""
+		agentSpec.variables[var.name] = var

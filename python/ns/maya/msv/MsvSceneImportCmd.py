@@ -155,7 +155,13 @@ def creator():
 def syntaxCreator():
 	syntax = OpenMaya.MSyntax()
 	syntax.addFlag( kFileFlag, kFileFlagLong, OpenMaya.MSyntax.kString )
-	
+	syntax.addFlag( kLoadGeometryFlag, kLoadGeometryFlagLong, OpenMaya.MSyntax.kBoolean )
+	syntax.addFlag( kSkinTypeFlag, kSkinTypeFlagLong, OpenMaya.MSyntax.kString )
+	syntax.addFlag( kLoadSegmentsFlag, kLoadSegmentsFlagLong, OpenMaya.MSyntax.kBoolean )
+	syntax.addFlag( kLoadMaterialsFlag, kLoadMaterialsFlagLong, OpenMaya.MSyntax.kBoolean )
+	syntax.addFlag( kMaterialTypeFlag, kMaterialTypeFlagLong, OpenMaya.MSyntax.kString )
+	syntax.addFlag( kInstanceSegmentsFlag, kInstanceSegmentsFlagLong, OpenMaya.MSyntax.kBoolean )
+
 	return syntax
 	
 	

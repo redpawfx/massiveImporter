@@ -55,6 +55,7 @@ class Material:
 		self.leftovers = ""
 
 class Geometry:
+	'''Imported'''
 	def __init__(self):
 		self.name = ""
 		self.file = ""
@@ -258,8 +259,12 @@ class AgentSpec:
 	def reset(self):
 		# public
 		self.cdlFile = ""
-		self.bindPoseFile = ""
+		self.units = ""
 		self.agentType = ""
+		self.id = -1
+		self.color = 0.0
+		self.angles = ""
+		self.bindPoseFile = ""
 		self.scaleVar = ""
 		# represented as SimData.Joint - but there will only be one frame of data
 		self.bindPoseData = None

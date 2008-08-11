@@ -61,6 +61,7 @@ def initializePlugin(oPlugin):
 	importer = RollbackImporter.RollbackImporter("OpenMaya")
 	
 	import ns.maya.msv.MsvSimImportCmd as MsvSimImportCmd
+	import ns.maya.msv.MsvSceneExportCmd as MsvSceneExportCmd
 	import ns.maya.msv.MsvSceneImportCmd as MsvSceneImportCmd
 	import ns.maya.msv.MsvSimLoader as MsvSimLoader
 	
@@ -81,6 +82,14 @@ def initializePlugin(oPlugin):
 		raise
 	
 	try:
+		fPlugin.registerCommand( MsvSceneExportCmd.kName,
+								 MsvSceneExportCmd.creator,
+								 MsvSceneExportCmd.syntaxCreator )
+	except:
+		sys.stderr.write( "Failed to register command: %s" % MsvSceneExportCmd.kName )
+		raise
+	
+	try:
 		fPlugin.registerNode( MsvSimLoader.kName,
 							  MsvSimLoader.kId,
 							  MsvSimLoader.nodeCreator,
@@ -96,6 +105,7 @@ def uninitializePlugin(oPlugin):
 	fPlugin = OpenMayaMPx.MFnPlugin(oPlugin)
 	
 	import ns.maya.msv.MsvSimImportCmd as MsvSimImportCmd
+	import ns.maya.msv.MsvSceneExportCmd as MsvSceneExportCmd
 	import ns.maya.msv.MsvSceneImportCmd as MsvSceneImportCmd
 	import ns.maya.msv.MsvSimLoader as MsvSimLoader
 
@@ -103,6 +113,12 @@ def uninitializePlugin(oPlugin):
 		fPlugin.deregisterCommand( MsvSimImportCmd.kName )
 	except:
 		sys.stderr.write( "Failed to deregister command: %s" % MsvSimImportCmd.kName )
+		raise
+
+	try:
+		fPlugin.deregisterCommand( MsvSceneExportCmd.kName )
+	except:
+		sys.stderr.write( "Failed to deregister command: %s" % MsvSceneExportCmd.kName )
 		raise
 
 	try:

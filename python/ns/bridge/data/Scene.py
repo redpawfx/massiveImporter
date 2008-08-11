@@ -88,14 +88,18 @@ class Scene:
 					# scene.
 					#
 					agentSpec.agentType = type
-				# Hash the Spec twice. If a callsheet is not provided
-				# the importer will use the agent names found in the sim data
-				# as the agent types
-				#
-				self._agentSpecMap[agentSpec.cdlFile] = agentSpec
-				self._agentSpecMap[agentSpec.agentType] = agentSpec
-				self._agentSpecs.append( agentSpec )
+				self.addAgentSpec(agentSpec)
 			else:
 				raise
 		return agentSpec
+	
+	def addAgentSpec(self, agentSpec):
+		# Hash the Spec twice. If a callsheet is not provided
+		# the importer will use the agent names found in the sim data
+		# as the agent types
+		#
+		self._agentSpecMap[agentSpec.cdlFile] = agentSpec
+		self._agentSpecMap[agentSpec.agentType] = agentSpec
+		self._agentSpecs.append( agentSpec )
+	   
 	

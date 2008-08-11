@@ -58,5 +58,9 @@ class MayaScene:
 		# now.
 		#	
 		MayaAgent.showLayers()
-
+		
+def dump(scene, target):
+	agentSpec = AgentSpec.AgentSpec()
+	MayaAgent.dump(agentSpec, target)
+	scene.addAgentSpec(agentSpec)
 		

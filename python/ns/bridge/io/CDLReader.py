@@ -258,8 +258,8 @@ def _handleVariable(fileHandle, tokens, agentSpec):
 	variable.default = float(tokens[2])
 	variable.min = float(tokens[3][1:])
 	variable.max = float(tokens[4][:-1])	
-	if len(tokens) >= 8:
-		variable.expression = tokens[7]
+	if len(tokens) >= 6:
+		variable.expression = tokens[5]
 	
 	agentSpec.variables[variable.name] = variable
 	return fileHandle.next()
@@ -420,15 +420,6 @@ def _handleSegment(fileHandle, tokens, agentSpec):
 	agentSpec.jointData.append( joint )
 	
 	return line
-			
-			
-def _handleObject(fileHandle, tokens, agentSpec):
-	'''Load the agent name'''
-	
-	agentSpec.agentType = tokens[1]
-
-	return fileHandle.next()
-
 
 def _handleCurve(fileHandle, tokens, action):
 	'''Read one anim curve.'''
@@ -474,11 +465,20 @@ def _handleAction(fileHandle, tokens, agentSpec):
 	agentSpec.actions[action.name] = action
 	
 	return line
+
+def _handleObject(fileHandle, tokens, agentSpec):
+	''' Reads the object and id tags. The id tag must follow the object tag
+		otherwise it won't be picked up - this is to avoid confusion with the
+		id tags within blocks that we don't heanlde (e.g. fuzzy).'''
 	
-def _handleBindPose(fileHandle, tokens, agentSpec):
-	'''Store the name of the bind pose file'''
-	agentSpec.bindPoseFile = _resolvePath( agentSpec.rootPath(), tokens[1] )
-	return fileHandle.next()
+	agentSpec.agentType = tokens[1]
+	line = fileHandle.next()
+	tokens = line.strip().split()
+	if (tokens[0] == "id"):
+		agentSpec.id = int(tokens[1])
+		line = fileHandle.next()
+	
+	return line
 
 def _process(fileHandle, line, agentSpec):
 	tokens = line.strip().split()
@@ -503,9 +503,20 @@ def _process(fileHandle, line, agentSpec):
 		elif tokens[0] == "action":
 			line = _handleAction(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "bind_pose":
-			line = _handleBindPose(fileHandle, tokens, agentSpec)
+			agentSpec.bindPoseFile = tokens[1]
+			line = fileHandle.next()
+		elif tokens[0] == "units":
+			agentSpec.units = tokens[1]
+			line = fileHandle.next()
+		elif tokens[0] == "colour":
+			agentSpec.color = float(tokens[1])
+			line = fileHandle.next()
+		elif tokens[0] == "angles":
+			agentSpec.angles = tokens[1]
+			line = fileHandle.next()
 		else:
-			agentSpec.leftovers += line
+			if tokens[0] != "#":
+				agentSpec.leftovers += line
 			break
 		
 		tokens = line.strip().split()
@@ -528,7 +539,7 @@ def read(cdlFile):
 				_process(fileHandle, line, agentSpec)
 				
 			if agentSpec.bindPoseFile:
-				agentSpec.setBindPose(AMCReader.read(agentSpec.bindPoseFile))
+				agentSpec.setBindPose(AMCReader.read(_resolvePath(agentSpec.rootPath(), agentSpec.bindPoseFile)))
 				
 		finally:
 		 	if fileHandle != cdlFile:

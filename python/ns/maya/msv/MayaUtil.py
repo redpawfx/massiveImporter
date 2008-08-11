@@ -41,13 +41,15 @@ def dagPathFromName(name):
 	selList.getDagPath( 0, dagPath )
 	return dagPath
 
-def setMultiAttr( multiAttr, values, childAttr="" ):
+def setMultiAttr( multiAttr, values, childAttr="", type="" ):
 	# Python allows a maximum of 255 arguments to a function/method call
 	# so the maximum number of values we can process in a single setAttr
 	# is 254 (255 minus 1 for the attribute name)
 	chunkSize = min( 254, len(values) )
 	if childAttr:
 		childAttr = ".%s" % childAttr
+	if type:
+		type = ", type='%s'" % type
 	for chunk in range( 0, len(values), chunkSize ):
 		# The last chunk may be smaller than chunkSize
 		#
@@ -56,7 +58,7 @@ def setMultiAttr( multiAttr, values, childAttr="" ):
 		stringValues = [ str(value) for value in values[chunk:chunk+curChunkSize] ]
 		valString = ", ".join(stringValues)
 		attr = "%s[%d:%d]%s" % (multiAttr, chunk, (chunk+curChunkSize-1), childAttr)
-		eval('mc.setAttr( "%s", %s )' % (attr, valString))
+		eval('mc.setAttr( "%s", %s%s )' % (attr, valString, type))
 		
 		
 def setMatrixAttr( matrixAttr, matrix ):
