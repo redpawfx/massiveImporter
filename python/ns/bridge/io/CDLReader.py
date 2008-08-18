@@ -27,6 +27,8 @@ import ns.bridge.io.AMCReader as AMCReader
 import ns.bridge.io.WReader as WReader
 import ns.bridge.data.AgentSpec as AgentSpec
 
+HANDLED_TOKENS = frozenset( ["object", "variable", "scale_var", "segment", "material", "cloth", "geometry", "option", "action", "bind_pose"] )
+
 def _resolvePath( rootPath, path ):
 	resolved = path
 	if resolved[0] == '+':
@@ -466,23 +468,44 @@ def _handleAction(fileHandle, tokens, agentSpec):
 	
 	return line
 
-def _handleObject(fileHandle, tokens, agentSpec):
-	''' Reads the object and id tags. The id tag must follow the object tag
-		otherwise it won't be picked up - this is to avoid confusion with the
-		id tags within blocks that we don't heanlde (e.g. fuzzy).'''
+def _handleLeftovers(fileHandle, token, inLine, agentSpec):
+	''''''
 	
-	agentSpec.agentType = tokens[1]
-	line = fileHandle.next()
-	tokens = line.strip().split()
-	if (tokens[0] == "id"):
-		agentSpec.id = int(tokens[1])
-		line = fileHandle.next()
+	leftovers = inLine
+	
+	line = ""	
+	for line in fileHandle:
+		
+		if not line[0].isspace():
+			# end of this block
+			break
+		
+		tokens = line.strip().split()
+		if tokens and tokens[0] in HANDLED_TOKENS:
+			# sometimes handled tokens are indented (e.g. variable, dynamics)
+			# not sure why
+			break
+		leftovers += line
+	
+	try:
+		agentSpec.leftovers[token] += leftovers
+	except:
+		agentSpec.leftovers[token] = leftovers
 	
 	return line
 
 def _process(fileHandle, line, agentSpec):
 	tokens = line.strip().split()
 	while tokens:
+		if (tokens[0] == "#"):
+			# Skip comments.
+			break
+		
+		# Keep track of the cdl file structure
+		if (not agentSpec.cdlStructure or
+		  	agentSpec.cdlStructure[-1] != tokens[0]):
+			agentSpec.cdlStructure.append(tokens[0])
+			
 		if tokens[0] == "variable":
 			line = _handleVariable(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "scale_var":
@@ -499,25 +522,15 @@ def _process(fileHandle, line, agentSpec):
 		elif tokens[0] == "option":
 			line = _handleOption(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "object":
-			line = _handleObject(fileHandle, tokens, agentSpec)
+			agentSpec.agentType = tokens[1]
+			line = fileHandle.next()
 		elif tokens[0] == "action":
 			line = _handleAction(fileHandle, tokens, agentSpec)
 		elif tokens[0] == "bind_pose":
 			agentSpec.bindPoseFile = tokens[1]
 			line = fileHandle.next()
-		elif tokens[0] == "units":
-			agentSpec.units = tokens[1]
-			line = fileHandle.next()
-		elif tokens[0] == "colour":
-			agentSpec.color = float(tokens[1])
-			line = fileHandle.next()
-		elif tokens[0] == "angles":
-			agentSpec.angles = tokens[1]
-			line = fileHandle.next()
 		else:
-			if tokens[0] != "#":
-				agentSpec.leftovers += line
-			break
+			line = _handleLeftovers(fileHandle, tokens[0], line, agentSpec)
 		
 		tokens = line.strip().split()
 	

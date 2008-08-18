@@ -57,16 +57,23 @@ def write(fileHandle, agentSpec):
 	
 	# TODO: define a global version number an use that
 	fileHandle.write("# CDL created with MsvTools for Maya version 1.0.0\n\n")
-	fileHandle.write("units %s\n\n" % agentSpec.units)
-	fileHandle.write("object %s\n" % agentSpec.agentType)
-	fileHandle.write("id     %s\n" % agentSpec.id)
-	fileHandle.write("colour %.6f\n" % agentSpec.color)
-	fileHandle.write("angles %s\n" % agentSpec.angles)
-	for var in agentSpec.variables.values():
-		fileHandle.write("        variables %s %.6f [%.6f %.6f] %s\n" % (var.name, var.default, var.min, var.max, var.expression))
-	fileHandle.write("scale_var %s\n" % agentSpec.scaleVar)
-	fileHandle.write("bind_pose %s\n" % agentSpec.bindPoseFile)
-	fileHandle.write(agentSpec.leftovers)
+	
+	for token in agentSpec.cdlStructure:
+		if (token == "object"):
+			fileHandle.write("object %s\n" % agentSpec.agentType)
+		elif (token == "variable"):
+			for var in agentSpec.variables.values():
+				fileHandle.write("        variables %s %.6f [%.6f %.6f] %s\n" % (var.name, var.default, var.min, var.max, var.expression))
+		elif (token == "scale_var"):
+			fileHandle.write("scale_var %s\n" % agentSpec.scaleVar)
+		elif (token == "bind_pose"):
+			fileHandle.write("bind_pose %s\n" % agentSpec.bindPoseFile)
+		else:
+			try:
+				fileHandle.write("%s" % agentSpec.leftovers[token])
+			except:
+				pass	
+
 
 
         

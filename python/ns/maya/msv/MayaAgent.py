@@ -742,22 +742,19 @@ class MayaAgent:
 		agentGroup = self.agentGroup()
 		mc.addAttr( agentGroup, longName='msvCdlFile', dataType='string' )
 		mc.setAttr( "%s.msvCdlFile" % agentGroup, self._agent.agentSpec.cdlFile, type='string' )
-		mc.addAttr( agentGroup, longName='msvUnits', dataType='string' )
-		mc.setAttr( "%s.msvUnits" % agentGroup, self._agent.agentSpec.units, type='string' )
-		mc.addAttr( agentGroup, longName='msvId', attributeType='long' )
-		mc.setAttr( "%s.msvId" % agentGroup, self._agent.agentSpec.id )
-		mc.addAttr( agentGroup, longName='msvColor', attributeType='float' )
-		mc.setAttr( "%s.msvColor" % agentGroup, self._agent.agentSpec.color )
-		mc.addAttr( agentGroup, longName='msvAngles', dataType='string' )
-		mc.setAttr( "%s.msvAngles" % agentGroup, self._agent.agentSpec.angles, type='string' )
 		mc.addAttr( agentGroup, longName='msvBindPoseFile', dataType='string' )
 		mc.setAttr( "%s.msvBindPoseFile" % agentGroup, self._agent.agentSpec.bindPoseFile, type='string' )
 		mc.addAttr( agentGroup, longName='msvAgentType', dataType='string' )
 		mc.setAttr( "%s.msvAgentType" % agentGroup, self._agent.agentSpec.agentType, type='string' )
 		mc.addAttr( agentGroup, longName='msvScaleVar', dataType='string' )
 		mc.setAttr( "%s.msvScaleVar" % agentGroup, self._agent.agentSpec.scaleVar, type='string' )
-		mc.addAttr( agentGroup, longName='msvLeftovers', dataType='string' )
-		mc.setAttr( "%s.msvLeftovers" % agentGroup, self._agent.agentSpec.leftovers, type='string' )
+		for (key, value) in self._agent.agentSpec.leftovers.items():
+			attrName = 'msv%sLeftovers' % key
+			mc.addAttr( agentGroup, longName=attrName, dataType='string' )
+			mc.setAttr( "%s.%s" % (agentGroup, attrName), value, type='string' )
+		cdlStructure = " ".join(self._agent.agentSpec.cdlStructure)
+		mc.addAttr( agentGroup, longName="msvCdlStructure", dataType='string' )
+		mc.setAttr( "%s.msvCdlStructure" % agentGroup, cdlStructure, type='string' )
 
 		# Add the variable descriptions to a multi-compound attribute
 		mc.addAttr( agentGroup, longName='msvVariables',
@@ -806,15 +803,16 @@ def dump(agentSpec, target):
 		leftovers:			msvLeftovers attribute on agentGroup
 	'''
 	
+	agentSpec.cdlStructure = mc.getAttr("%s.msvCdlStructure" % target).split()
+	
+	for token in agentSpec.cdlStructure:
+		if mc.objExists("%s.msv%sLeftovers" % (target, token)):
+			agentSpec.leftovers[token] = mc.getAttr("%s.msv%sLeftovers" % (target, token))
+
 	agentSpec.cdlFile = mc.getAttr("%s.msvCdlFile" % target)
-	agentSpec.units = mc.getAttr("%s.msvUnits" % target)
 	agentSpec.agentType = mc.getAttr("%s.msvAgentType" % target)
-	agentSpec.id = mc.getAttr("%s.msvId" % target)
-	agentSpec.color = mc.getAttr("%s.msvColor" % target)
-	agentSpec.angles = mc.getAttr("%s.msvAngles" % target)
 	agentSpec.bindPoseFile = mc.getAttr("%s.msvBindPoseFile" % target)
 	agentSpec.scaleVar = mc.getAttr("%s.msvScaleVar" % target)
-	agentSpec.leftovers = mc.getAttr("%s.msvLeftovers" % target)
 	
 	numVars = mc.getAttr("%s.msvVariables" % target, size=True)
 	for i in range(numVars):

@@ -259,11 +259,7 @@ class AgentSpec:
 	def reset(self):
 		# public
 		self.cdlFile = ""
-		self.units = ""
 		self.agentType = ""
-		self.id = -1
-		self.color = 0.0
-		self.angles = ""
 		self.bindPoseFile = ""
 		self.scaleVar = ""
 		# represented as SimData.Joint - but there will only be one frame of data
@@ -275,7 +271,8 @@ class AgentSpec:
 		self.variables = {}
 		# map Massive joint name to the joint object
 		self.joints = {}
-		self.leftovers = ""
+		self.leftovers = {}
+		self.cdlStructure = []
 		
 		# private
 		self._rootPath = ""
