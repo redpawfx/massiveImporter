@@ -26,8 +26,9 @@ import os.path
 import ns.bridge.io.AMCReader as AMCReader
 import ns.bridge.io.WReader as WReader
 import ns.bridge.data.AgentSpec as AgentSpec
+import ns.bridge.data.Brain as Brain
 
-HANDLED_TOKENS = frozenset( ["object", "variable", "scale_var", "segment", "material", "cloth", "geometry", "option", "action", "bind_pose"] )
+DEFAULT_TOKENS = ["object", "variable", "scale_var", "segment", "material", "cloth", "geometry", "option", "action", "bind_pose"]
 
 def _resolvePath( rootPath, path ):
 	resolved = path
@@ -468,8 +469,9 @@ def _handleAction(fileHandle, tokens, agentSpec):
 	
 	return line
 
-def _handleLeftovers(fileHandle, token, inLine, agentSpec):
-	''''''
+def _handleLeftovers(fileHandle, token, inLine, agentSpec, tokensSet):
+	'''	Default handling routine - just adds the .cdl file text to
+		appropriate entry of the leftovers dictionary.'''
 	
 	leftovers = inLine
 	
@@ -481,7 +483,7 @@ def _handleLeftovers(fileHandle, token, inLine, agentSpec):
 			break
 		
 		tokens = line.strip().split()
-		if tokens and tokens[0] in HANDLED_TOKENS:
+		if tokens and tokens[0] in tokensSet:
 			# sometimes handled tokens are indented (e.g. variable, dynamics)
 			# not sure why
 			break
@@ -494,7 +496,41 @@ def _handleLeftovers(fileHandle, token, inLine, agentSpec):
 	
 	return line
 
-def _process(fileHandle, line, agentSpec):
+def _handleToken(fileHandle, tokens, agentSpec):
+	''' Hand written handling routines. Check the first token to see how it
+		should be handled.'''
+	line = ""
+	if tokens[0] == "variable":
+		line = _handleVariable(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "scale_var":
+		agentSpec.scaleVar = tokens[1]
+		line = fileHandle.next()
+	elif tokens[0] == "segment" :
+		line = _handleSegment(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "material":
+		line = _handleMaterial(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "cloth":
+		line = _handleCloth(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "geometry":
+		line = _handleGeometry(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "option":
+		line = _handleOption(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "object":
+		agentSpec.agentType = tokens[1]
+		line = fileHandle.next()
+	elif tokens[0] == "action":
+		line = _handleAction(fileHandle, tokens, agentSpec)
+	elif tokens[0] == "bind_pose":
+		agentSpec.bindPoseFile = tokens[1]
+		line = fileHandle.next()
+	elif tokens[0] == "fuzzy":
+		line = agentSpec.brain.loadNode(fileHandle, tokens)
+	else:
+		raise Exception("Don't know how to handle token '%s'." % tokens[0])
+	
+	return line
+			
+def _process(fileHandle, line, agentSpec, tokensSet):
 	tokens = line.strip().split()
 	while tokens:
 		if (tokens[0] == "#"):
@@ -505,38 +541,19 @@ def _process(fileHandle, line, agentSpec):
 		if (not agentSpec.cdlStructure or
 		  	agentSpec.cdlStructure[-1] != tokens[0]):
 			agentSpec.cdlStructure.append(tokens[0])
-			
-		if tokens[0] == "variable":
-			line = _handleVariable(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "scale_var":
-			agentSpec.scaleVar = tokens[1]
-			line = fileHandle.next()
-		elif tokens[0] == "segment" :
-			line = _handleSegment(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "material":
-			line = _handleMaterial(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "cloth":
-			line = _handleCloth(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "geometry":
-			line = _handleGeometry(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "option":
-			line = _handleOption(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "object":
-			agentSpec.agentType = tokens[1]
-			line = fileHandle.next()
-		elif tokens[0] == "action":
-			line = _handleAction(fileHandle, tokens, agentSpec)
-		elif tokens[0] == "bind_pose":
-			agentSpec.bindPoseFile = tokens[1]
-			line = fileHandle.next()
+		
+		if tokens[0] in tokensSet:
+			line = _handleToken(fileHandle, tokens, agentSpec)
 		else:
-			line = _handleLeftovers(fileHandle, tokens[0], line, agentSpec)
+			line = _handleLeftovers(fileHandle, tokens[0], line, agentSpec, tokensSet)
 		
 		tokens = line.strip().split()
 	
 	
-def read(cdlFile):
-	#
+def read(cdlFile, handledTokens=DEFAULT_TOKENS):
+	'''	handledTokens: a list containing the tokens that should be parsed out
+		and handled. Any tokens not in this list will be stuffed into the
+		AgentSpec leftovers attribute.'''
 	
 	agentSpec = AgentSpec.AgentSpec()
 	rootPath = ""
@@ -546,10 +563,12 @@ def read(cdlFile):
 	else:
 		fileHandle = cdlFile
 	
+	tokensSet = frozenset(handledTokens)
+	
 	try:
 		try:
 			for line in fileHandle:
-				_process(fileHandle, line, agentSpec)
+				_process(fileHandle, line, agentSpec, tokensSet)
 				
 			if agentSpec.bindPoseFile:
 				agentSpec.setBindPose(AMCReader.read(_resolvePath(agentSpec.rootPath(), agentSpec.bindPoseFile)))
@@ -558,9 +577,9 @@ def read(cdlFile):
 		 	if fileHandle != cdlFile:
 		 		# I opened fileHandle so I have to close it
 		 		fileHandle.close()	
-	except:
-		print >> sys.stderr, "Error reading CDL file."
-		raise
+	except Exception, e:
+		print >> sys.stderr, "Error reading CDL file: %s" % e
+		raise e
 	
 	return agentSpec
 

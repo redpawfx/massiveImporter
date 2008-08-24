@@ -35,7 +35,7 @@ def _writePlace(fileHandle, mas):
  	
  	for group in mas.groups:
  		fileHandle.write("\tgroup %d %s\n" % (group.id, group.name))
- 		# MasReader expeccts every group block to have 3 lines, but, for
+ 		# MasReader expects every group block to have 3 lines, but, for
  		# now we don't write any of that info out
  		fileHandle.write("\t\ttranslate\n")
  		fileHandle.write("\t\tcolour\n")
@@ -59,21 +59,23 @@ def write(fileHandle, agentSpec):
 	fileHandle.write("# CDL created with MsvTools for Maya version 1.0.0\n\n")
 	
 	for token in agentSpec.cdlStructure:
-		if (token == "object"):
-			fileHandle.write("object %s\n" % agentSpec.agentType)
-		elif (token == "variable"):
-			for var in agentSpec.variables.values():
-				fileHandle.write("        variables %s %.6f [%.6f %.6f] %s\n" % (var.name, var.default, var.min, var.max, var.expression))
-		elif (token == "scale_var"):
-			fileHandle.write("scale_var %s\n" % agentSpec.scaleVar)
-		elif (token == "bind_pose"):
-			fileHandle.write("bind_pose %s\n" % agentSpec.bindPoseFile)
-		else:
-			try:
-				fileHandle.write("%s" % agentSpec.leftovers[token])
-			except:
-				pass	
-
+		try:
+			# If the token is in the leftovers dictionary, write it.
+			# If this throws a KeyError we'll have to check the AgentSpec
+			# to see how the info should be written
+			fileHandle.write("%s" % agentSpec.leftovers[token])
+		except:
+			if (token == "object"):
+				fileHandle.write("object %s\n" % agentSpec.agentType)
+			elif (token == "variable"):
+				for var in agentSpec.variables.values():
+					fileHandle.write("        variables %s %.6f [%.6f %.6f] %s\n" % (var.name, var.default, var.min, var.max, var.expression))
+			elif (token == "scale_var"):
+				fileHandle.write("scale_var %s\n" % agentSpec.scaleVar)
+			elif (token == "bind_pose"):
+				fileHandle.write("bind_pose %s\n" % agentSpec.bindPoseFile)
+			elif (token == "fuzzy"):
+				agentSpec.brain.dump(fileHandle)
 
 
         

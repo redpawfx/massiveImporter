@@ -25,6 +25,7 @@ import re
 import os.path
 
 import ns.bridge.io.WReader as WReader
+import ns.bridge.data.Brain as Brain
 
 kTX, kTY, kTZ, kRX, kRY, kRZ = range(6)
 channel2Enum = dict([["tx", kTX], ["ty", kTY], ["tz", kTZ], ["rx", kRX], ["ry", kRY], ["rz", kRZ]])
@@ -269,6 +270,7 @@ class AgentSpec:
 		self.materialData = []
 		self.actions = {}
 		self.variables = {}
+		self.brain = Brain.Brain()
 		# map Massive joint name to the joint object
 		self.joints = {}
 		self.leftovers = {}

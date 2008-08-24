@@ -11,6 +11,7 @@ _pyDstRoot = "%s/python" % _dstRoot
 _pluginsDstRoot = "%s/plug-ins" % _dstRoot
 _scriptsDstRoot = "%s/scripts" % _dstRoot
 _iconsDstRoot = "%s/icons" % _dstRoot
+_testsDstRoot = "%s/tests" % _dstRoot
 
 _pluginFiles = [ "plug-ins/MsvTools.py" ]
 
@@ -24,6 +25,7 @@ _pyFiles = [
 		"ns/bridge/data/Sim.py",
 		"ns/bridge/data/Agent.py",
 		"ns/bridge/data/AgentSpec.py",
+		"ns/bridge/data/Brain.py",
 		"ns/bridge/io/AMCReader.py",
 		"ns/bridge/io/APFReader.py",
 		"ns/bridge/io/CallsheetReader.py",
@@ -64,7 +66,12 @@ _extraFiles = [
 		"LICENSE.txt",
 		"CHANGES.txt",
 		"MsvTools.txt",
-		"MsvTranslator.py"
+		"MsvTranslator.py",
+		"MsvEvolve.py"
+		]
+
+_testFiles = [
+		"tests/TestEvolveIO.py"
 		]
 
 _iconFiles = [
@@ -134,11 +141,14 @@ def main():
 		os.mkdir(_scriptsDstRoot)
 	if not os.path.isdir(_iconsDstRoot):
 		os.mkdir(_iconsDstRoot)
-		
+	if not os.path.isdir(_testsDstRoot):
+		os.mkdir(_testsDstRoot)
+				
 	copyPythonFiles( _pySrcRoot, _pyDstRoot, _pyFiles, flatten=False, compile=False )
 	copyPythonFiles( _srcRoot, _pluginsDstRoot, _pluginFiles, flatten=True, compile=False )
 	copyFiles( _srcRoot, _scriptsDstRoot, _melFiles, True )
 	copyFiles( _srcRoot, _dstRoot, _extraFiles, True )
+	copyFiles( _srcRoot, _testsDstRoot, _testFiles, True )
 	copyFiles( _srcRoot, _iconsDstRoot, _iconFiles, True )
 
 if __name__ == "__main__":
