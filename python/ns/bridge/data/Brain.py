@@ -29,54 +29,54 @@ def formatFloat(flt):
 
 class Node(object):
 	def __init__(self):
-		self.__id = 0
-		self.__idSet = False
-		self.__name = ""
-		self.__nameSet = False
-		self.__translate = []
-		self.__translateSet = False
-		self.__inputs = []
-		self.__inputsSet = False
-		self.__altInputs = []
-		self.__altInputsSet = False
-		self.__parent = 0
-		self.__parentSet = False
+		self._id = 0
+		self._idSet = False
+		self._name = ""
+		self._nameSet = False
+		self._translate = []
+		self._translateSet = False
+		self._inputs = []
+		self._inputsSet = False
+		self._altInputs = []
+		self._altInputsSet = False
+		self._parent = 0
+		self._parentSet = False
 
-	def __setId(self, val):
-		self.__id = val
-		self.__idSet = True
-	def __getId(self): return self.__id
-	id = property(__getId, __setId)
+	def _setId(self, val):
+		self._id = val
+		self._idSet = True
+	def _getId(self): return self._id
+	id = property(_getId, _setId)
 	
-	def __setName(self, val):
-		self.__name = val
-		self.__nameSet = True
-	def __getName(self): return self.__name
-	name = property(__getName, __setName)
+	def _setName(self, val):
+		self._name = val
+		self._nameSet = True
+	def _getName(self): return self._name
+	name = property(_getName, _setName)
 	
-	def __setTranslate(self, val):
-		self.__translate = val
-		self.__translateSet = True
-	def __getTranslate(self): return self.__translate
-	translate = property(__getTranslate, __setTranslate)
+	def _setTranslate(self, val):
+		self._translate = val
+		self._translateSet = True
+	def _getTranslate(self): return self._translate
+	translate = property(_getTranslate, _setTranslate)
 	
-	def __setInputs(self, val):
-		self.__inputs = val
-		self.__inputsSet = True
-	def __getInputs(self): return self.__inputs
-	inputs = property(__getInputs, __setInputs)
+	def _setInputs(self, val):
+		self._inputs = val
+		self._inputsSet = True
+	def _getInputs(self): return self._inputs
+	inputs = property(_getInputs, _setInputs)
 	
-	def __setAltInputs(self, val):
-		self.__altInputs = val
-		self.__altInputsSet = True
-	def __getAltInputs(self): return self.__altInputs
-	altInputs = property(__getAltInputs, __setAltInputs)
+	def _setAltInputs(self, val):
+		self._altInputs = val
+		self._altInputsSet = True
+	def _getAltInputs(self): return self._altInputs
+	altInputs = property(_getAltInputs, _setAltInputs)
 	
-	def __setParent(self, val):
-		self.__parent = val
-		self.__parentSet = True
-	def __getParent(self): return self.__parent
-	parent = property(__getParent, __setParent)
+	def _setParent(self, val):
+		self._parent = val
+		self._parentSet = True
+	def _getParent(self): return self._parent
+	parent = property(_getParent, _setParent)
 
 	def load(self, fileHandle):
 		line = ""
@@ -103,15 +103,15 @@ class Node(object):
 		return line
 	
 	def _dumpHeader(self, fileHandle):
-		if self.__idSet:
+		if self._idSet:
 			fileHandle.write("    id        %d\n" % self.id)
-		if self.__nameSet:
+		if self._nameSet:
 			fileHandle.write("    name      %s\n" % self.name)
-		if self.__translateSet:
+		if self._translateSet:
 			fileHandle.write("    translate %d %d\n" % (self.translate[0], self.translate[1]))
 		
 	def _dumpFooter(self, fileHandle):
-		if self.__inputsSet:
+		if self._inputsSet:
 			if len(self.inputs) == 1:
 				fileHandle.write("    %d input" % len(self.inputs))
 			else:
@@ -119,7 +119,7 @@ class Node(object):
 			for input in self.inputs:
 				fileHandle.write(" %d" % input)
 			fileHandle.write("\n")
-		if self.__altInputsSet:
+		if self._altInputsSet:
 			if len(self.altInputs) == 1:
 				fileHandle.write("    %d alt input" % len(self.altInputs))
 			else:
@@ -127,49 +127,50 @@ class Node(object):
 			for input in self.altInputs:
 				fileHandle.write(" %d" % input)
 			fileHandle.write("\n")
-		if self.__parentSet:
+		if self._parentSet:
 			fileHandle.write("    parent %d\n" % self.parent)
 
 class Input(Node):
 	def __init__(self):
 		super(Input, self).__init__()
-		self.__channel = ""
-		self.__channelSet = False
-		self.__integrate = ""
-		self.__integrateSet = False
-		self.__range = []
-		self.__rangeSet = False
-		self.__output = 0
-		self.__outputSet = False
+		self._channel = ""
+		self._channelSet = False
+		self._integrate = ""
+		self._integrateSet = False
+		self._range = []
+		self._rangeSet = False
+		self._output = 0
+		self._outputSet = False
 		
-	def __setChannel(self, val):
-		self.__channel = val
-		self.__channelSet = True
-	def __getChannel(self): return self.__channel
-	channel = property(__getChannel, __setChannel)
+	def _setChannel(self, val):
+		self._channel = val
+		self._channelSet = True
+	def _getChannel(self): return self._channel
+	channel = property(_getChannel, _setChannel)
 
-	def __setIntegrate(self, val):
-		self.__integrate = val
-		self.__integrateSet = True
-	def __getIntegrate(self): return self.__integrate
-	integrate = property(__getIntegrate, __setIntegrate)
+	def _setIntegrate(self, val):
+		self._integrate = val
+		self._integrateSet = True
+	def _getIntegrate(self): return self._integrate
+	integrate = property(_getIntegrate, _setIntegrate)
 
-	def __setRange(self, val):
-		self.__range = val
-		self.__rangeSet = True
-	def __getRange(self): return self.__range
-	range = property(__getRange, __setRange)
+	def _setRange(self, val):
+		self._range = val
+		self._rangeSet = True
+	def _getRange(self): return self._range
+	range = property(_getRange, _setRange)
 
-	def __setOutput(self, val):
-		self.__output = val
-		self.__outputSet = True
-	def __getOutput(self): return self.__output
-	output = property(__getOutput, __setOutput)
+	def _setOutput(self, val):
+		self._output = val
+		self._outputSet = True
+	def _getOutput(self): return self._output
+	output = property(_getOutput, _setOutput)
 
 		
 	def _parseTokens(self, tokens):
 		if tokens[0] == "channel":
-			self.channel = tokens[1]	
+			if len(tokens) > 1:
+				self.channel = tokens[1]	
 		elif tokens[0] == "integrate":
 			self.integrate = tokens[1]	
 		elif tokens[0] == "range":
@@ -180,88 +181,89 @@ class Input(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy input\n")
 		self._dumpHeader(fileHandle)
-		if self.__channelSet:
+		if self._channelSet:
 			fileHandle.write("    channel %s\n" % self.channel)
-		if self.__outputSet:
+		if self._outputSet:
 			fileHandle.write("    output  %f\n" % self.output)
-		if self.__integrateSet:
+		if self._integrateSet:
 			fileHandle.write("    integrate %s\n" % self.integrate)
-		if self.__rangeSet:
+		if self._rangeSet:
 			fileHandle.write("    range %f %f\n" % (self.range[0], self.range[1]))
 		self._dumpFooter(fileHandle)
 		
 class Output(Node):
 	def __init__(self):
 		super(Output, self).__init__()
-		self.__channel = ""
-		self.__channelSet = False
-		self.__defuzz = ""
-		self.__defuzzSet = False
-		self.__integrate = ""
-		self.__integrateSet = False
-		self.__range = []
-		self.__rangeSet = False
-		self.__delay = 0.0
-		self.__delaySet = False
-		self.__rate = 0.0
-		self.__rateSet = False
-		self.__output = 0.0
-		self.__outputSet = False
-		self.__manual = False
+		self._channel = ""
+		self._channelSet = False
+		self._defuzz = ""
+		self._defuzzSet = False
+		self._integrate = ""
+		self._integrateSet = False
+		self._range = []
+		self._rangeSet = False
+		self._delay = 0.0
+		self._delaySet = False
+		self._rate = 0.0
+		self._rateSet = False
+		self._output = 0.0
+		self._outputSet = False
+		self._manual = False
 		
-	def __setChannel(self, val):
-		self.__channel = val
-		self.__channelSet = True
-	def __getChannel(self): return self.__channel
-	channel = property(__getChannel, __setChannel)
+	def _setChannel(self, val):
+		self._channel = val
+		self._channelSet = True
+	def _getChannel(self): return self._channel
+	channel = property(_getChannel, _setChannel)
 	
-	def __setDefuzz(self, val):
-		self.__defuzz = val
-		self.__defuzzSet = True
-	def __getDefuzz(self): return self.__defuzz
-	defuzz = property(__getDefuzz, __setDefuzz)
+	def _setDefuzz(self, val):
+		self._defuzz = val
+		self._defuzzSet = True
+	def _getDefuzz(self): return self._defuzz
+	defuzz = property(_getDefuzz, _setDefuzz)
 	
-	def __setIntegrate(self, val):
-		self.__integrate = val
-		self.__integrateSet = True
-	def __getIntegrate(self): return self.__integrate
-	integrate = property(__getIntegrate, __setIntegrate)
+	def _setIntegrate(self, val):
+		self._integrate = val
+		self._integrateSet = True
+	def _getIntegrate(self): return self._integrate
+	integrate = property(_getIntegrate, _setIntegrate)
 	
-	def __setRange(self, val):
-		self.__range = val
-		self.__rangeSet = True
-	def __getRange(self): return self.__range
-	range = property(__getRange, __setRange)
+	def _setRange(self, val):
+		self._range = val
+		self._rangeSet = True
+	def _getRange(self): return self._range
+	range = property(_getRange, _setRange)
 	
-	def __setDelay(self, val):
-		self.__delay = val
-		self.__delaySet = True
-	def __getDelay(self): return self.__delay
-	delay = property(__getDelay, __setDelay)
+	def _setDelay(self, val):
+		self._delay = val
+		self._delaySet = True
+	def _getDelay(self): return self._delay
+	delay = property(_getDelay, _setDelay)
 	
-	def __setRate(self, val):
-		self.__rate = val
-		self.__rateSet = True
-	def __getRate(self): return self.__rate
-	rate = property(__getRate, __setRate)
+	def _setRate(self, val):
+		self._rate = val
+		self._rateSet = True
+	def _getRate(self): return self._rate
+	rate = property(_getRate, _setRate)
 	
-	def __setOutput(self, val):
-		self.__output = val
-		self.__outputSet = True
-	def __getOutput(self): return self.__output
-	output = property(__getOutput, __setOutput)
+	def _setOutput(self, val):
+		self._output = val
+		self._outputSet = True
+	def _getOutput(self): return self._output
+	output = property(_getOutput, _setOutput)
 	
-	def __setManual(self, val):
-		self.__manual = val
-	def __getManual(self): return self.__manual
-	manual = property(__getManual, __setManual)
+	def _setManual(self, val):
+		self._manual = val
+	def _getManual(self): return self._manual
+	manual = property(_getManual, _setManual)
 
 		
 	def _parseTokens(self, tokens):
 		'''	If Manual is enabled the output value is stored in the 'output'
 			token.'''
 		if tokens[0] == "channel":
-			self.channel = tokens[1]	
+			if len(tokens) > 1:
+				self.channel = tokens[1]	
 		elif tokens[0] == "defuzz":
 			self.defuzz = tokens[1]
 		elif tokens[0] == "integrate":
@@ -280,55 +282,55 @@ class Output(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy output\n")
 		self._dumpHeader(fileHandle)
-		if self.__channelSet:
+		if self._channelSet:
 			fileHandle.write("    channel %s\n" % self.channel)
-		if self.__outputSet:
+		if self._outputSet:
 			fileHandle.write("    output  %f\n" % self.output)
-		if self.__manual:
+		if self._manual:
 			fileHandle.write("    manual\n")
-		if self.__defuzzSet:
+		if self._defuzzSet:
 			fileHandle.write("    defuzz  %s\n" % self.defuzz)
-		if self.__integrateSet:
+		if self._integrateSet:
 			fileHandle.write("    integrate %s\n" % self.integrate)
-		if self.__rangeSet:
+		if self._rangeSet:
 			fileHandle.write("    range %f %f\n" % (self.range[0], self.range[1]))
-		if self.__delaySet:
+		if self._delaySet:
 			fileHandle.write("    delay %f\n" % self.delay)
-		if self.__rateSet:
+		if self._rateSet:
 			fileHandle.write("    rate %f\n" % self.rate)
 		self._dumpFooter(fileHandle)
 				
 class Fuzz(Node):
 	def __init__(self):
 		super(Fuzz, self).__init__()
-		self.__inference = ""
-		self.__inferenceSet = False
-		self.__inferencePoints = []
-		self.__interpolation = ""
-		self.__interpolationSet = False
-		self.__wrap = False
+		self._inference = ""
+		self._inferenceSet = False
+		self._inferencePoints = []
+		self._interpolation = ""
+		self._interpolationSet = False
+		self._wrap = False
 
-	def __setInference(self, val):
-		self.__inference = val
-		self.__inferenceSet = True
-	def __getInference(self): return self.__inference
-	inference = property(__getInference, __setInference)
+	def _setInference(self, val):
+		self._inference = val
+		self._inferenceSet = True
+	def _getInference(self): return self._inference
+	inference = property(_getInference, _setInference)
 
-	def __setInferencePoints(self, val):
-		self.__inferencePoints = val
-	def __getInferencePoints(self): return self.__inferencePoints
-	inferencePoints = property(__getInferencePoints, __setInferencePoints)
+	def _setInferencePoints(self, val):
+		self._inferencePoints = val
+	def _getInferencePoints(self): return self._inferencePoints
+	inferencePoints = property(_getInferencePoints, _setInferencePoints)
 
-	def __setInterpolation(self, val):
-		self.__interpolation = val
-		self.__interpolationSet = True
-	def __getInterpolation(self): return self.__interpolation
-	interpolation = property(__getInterpolation, __setInterpolation)
+	def _setInterpolation(self, val):
+		self._interpolation = val
+		self._interpolationSet = True
+	def _getInterpolation(self): return self._interpolation
+	interpolation = property(_getInterpolation, _setInterpolation)
 
-	def __setWrap(self, val):
-		self.__wrap = val
-	def __getWrap(self): return self.__wrap
-	wrap = property(__getWrap, __setWrap)
+	def _setWrap(self, val):
+		self._wrap = val
+	def _getWrap(self): return self._wrap
+	wrap = property(_getWrap, _setWrap)
 
 
 	def _parseTokens(self, tokens):
@@ -343,14 +345,14 @@ class Fuzz(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy fuzz\n")
 		self._dumpHeader(fileHandle)
-		if self.__inferenceSet:
+		if self._inferenceSet:
 			fileHandle.write("    %s inference" % self.inference)
 			for point in self.inferencePoints:
 				fileHandle.write(" %f" % point)
 			fileHandle.write("\n")
-		if self.__interpolationSet:
+		if self._interpolationSet:
 			fileHandle.write("    %s interpolation\n" % self.interpolation)
-		if self.__wrap:
+		if self._wrap:
 			fileHandle.write("    wrap\n")
 		self._dumpFooter(fileHandle)
 		
@@ -358,22 +360,22 @@ class Fuzz(Node):
 class Rule(Node):
 	def __init__(self):
 		super(Rule, self).__init__()
-		self.__weight = 0.0
-		self.__weightSet = False
-		self.__type = "min"
-		self.__typeSet = False
+		self._weight = 0.0
+		self._weightSet = False
+		self._type = "min"
+		self._typeSet = False
 
-	def __setWeight(self, val):
-		self.__weight = val
-		self.__weightSet = True
-	def __getWeight(self): return self.__weight
-	weight = property(__getWeight, __setWeight)
+	def _setWeight(self, val):
+		self._weight = val
+		self._weightSet = True
+	def _getWeight(self): return self._weight
+	weight = property(_getWeight, _setWeight)
 	
-	def __setType(self, val):
-		self.__type = val
-		self.__typeSet = True
-	def __getType(self): return self.__type
-	type = property(__getType, __setType)
+	def _setType(self, val):
+		self._type = val
+		self._typeSet = True
+	def _getType(self): return self._type
+	type = property(_getType, _setType)
 	
 	def _parseTokens(self, tokens):
 		if tokens[0] == "weight":
@@ -384,31 +386,31 @@ class Rule(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy rule\n")
 		self._dumpHeader(fileHandle)
-		if self.__weightSet:
+		if self._weightSet:
 			fileHandle.write("    weight  %f\n" % self.weight)
-		if self.__typeSet:
+		if self._typeSet:
 			fileHandle.write("    and     %s\n" % self.type)
 		self._dumpFooter(fileHandle)
 
 class Or(Node):
 	def __init__(self):
 		super(Or, self).__init__()
-		self.__weight = 0.0
-		self.__weightSet = False
-		self.__type = "max"
-		self.__typeSet = False
+		self._weight = 0.0
+		self._weightSet = False
+		self._type = "max"
+		self._typeSet = False
 
-	def __setWeight(self, val):
-		self.__weight = val
-		self.__weightSet = True
-	def __getWeight(self): return self.__weight
-	weight = property(__getWeight, __setWeight)
+	def _setWeight(self, val):
+		self._weight = val
+		self._weightSet = True
+	def _getWeight(self): return self._weight
+	weight = property(_getWeight, _setWeight)
 	
-	def __setType(self, val):
-		self.__type = val
-		self.__typeSet = True
-	def __getType(self): return self.__type
-	type = property(__getType, __setType)
+	def _setType(self, val):
+		self._type = val
+		self._typeSet = True
+	def _getType(self): return self._type
+	type = property(_getType, _setType)
 		
 	def _parseTokens(self, tokens):
 		if tokens[0] == "weight":
@@ -419,29 +421,29 @@ class Or(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy or\n")
 		self._dumpHeader(fileHandle)
-		if self.__weightSet:
+		if self._weightSet:
 			fileHandle.write("    weight  %f\n" % self.weight)
-		if self.__typeSet:
+		if self._typeSet:
 			fileHandle.write("    or %s\n" % self.type)
 		self._dumpFooter(fileHandle)
 		
 class Defuzz(Node):
 	def __init__(self):
 		super(Defuzz, self).__init__()
-		self.__defuzz = 0.0
-		self.__defuzzSet = False
-		self.__isElse = False
+		self._defuzz = 0.0
+		self._defuzzSet = False
+		self._isElse = False
 
-	def __setDefuzz(self, val):
-		self.__defuzz = val
-		self.__defuzzSet = True
-	def __getDefuzz(self): return self.__defuzz
-	defuzz = property(__getDefuzz, __setDefuzz)
+	def _setDefuzz(self, val):
+		self._defuzz = val
+		self._defuzzSet = True
+	def _getDefuzz(self): return self._defuzz
+	defuzz = property(_getDefuzz, _setDefuzz)
 	
-	def __setIsElse(self, val):
-		self.__isElse = val
-	def __getIsElse(self): return self.__isElse
-	isElse = property(__getIsElse, __setIsElse)
+	def _setIsElse(self, val):
+		self._isElse = val
+	def _getIsElse(self): return self._isElse
+	isElse = property(_getIsElse, _setIsElse)
 
 	def _parseTokens(self, tokens):
 		if tokens[0] == "defuzz":
@@ -452,39 +454,39 @@ class Defuzz(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy defuzz\n")
 		self._dumpHeader(fileHandle)
-		if self.__defuzzSet:
+		if self._defuzzSet:
 			fileHandle.write("    defuzz  %f\n" % self.defuzz)
-		if self.__isElse:
+		if self._isElse:
 			fileHandle.write("    else\n")
 		self._dumpFooter(fileHandle)
 
 class Noise(Node):
 	def __init__(self):
 		super(Noise, self).__init__()
-		self.__rate = 0
-		self.__rateSet = False
-		self.__seed = 0
-		self.__seedSet = False
-		self.__output = 0.0
-		self.__outputSet = False
+		self._rate = 0
+		self._rateSet = False
+		self._seed = 0
+		self._seedSet = False
+		self._output = 0.0
+		self._outputSet = False
 
-	def __setRate(self, val):
-		self.__rate = val
-		self.__rateSet = True
-	def __getRate(self): return self.__rate
-	rate = property(__getRate, __setRate)
+	def _setRate(self, val):
+		self._rate = val
+		self._rateSet = True
+	def _getRate(self): return self._rate
+	rate = property(_getRate, _setRate)
 	
-	def __setSeed(self, val):
-		self.__seed = val
-		self.__seedSet = True
-	def __getSeed(self): return self.__seed
-	seed = property(__getSeed, __setSeed)
+	def _setSeed(self, val):
+		self._seed = val
+		self._seedSet = True
+	def _getSeed(self): return self._seed
+	seed = property(_getSeed, _setSeed)
 
-	def __setOutput(self, val):
-		self.__output = val
-		self.__outputSet = True
-	def __getOutput(self): return self.__output
-	output = property(__getOutput, __setOutput)
+	def _setOutput(self, val):
+		self._output = val
+		self._outputSet = True
+	def _getOutput(self): return self._output
+	output = property(_getOutput, _setOutput)
 	
 	def _parseTokens(self, tokens):
 		'''If Manual is checked, the noise value is written as 'output'.'''
@@ -498,47 +500,47 @@ class Noise(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy noise\n")
 		self._dumpHeader(fileHandle)
-		if self.__rateSet:
+		if self._rateSet:
 			fileHandle.write("    rate    %s\n" % formatFloat(self.rate))
-		if self.__seedSet:
+		if self._seedSet:
 			fileHandle.write("    seed    %d\n" % self.seed)
-		if self.__outputSet:
+		if self._outputSet:
 			fileHandle.write("    output  %s\n" % formatFloat(self.output))
 		self._dumpFooter(fileHandle)
 				
 class Timer(Node):
 	def __init__(self):
 		super(Timer, self).__init__()
-		self.__rate = 0
-		self.__rateSet = False
-		self.__trigger = ""
-		self.__triggerSet= False
-		self.__range = [0.0, 1.0]
-		self.__rangeSet = False
-		self.__endless = False
+		self._rate = 0
+		self._rateSet = False
+		self._trigger = ""
+		self._triggerSet= False
+		self._range = [0.0, 1.0]
+		self._rangeSet = False
+		self._endless = False
 
-	def __setRate(self, val):
-		self.__rate = val
-		self.__rateSet = True
-	def __getRate(self): return self.__rate
-	rate = property(__getRate, __setRate)
+	def _setRate(self, val):
+		self._rate = val
+		self._rateSet = True
+	def _getRate(self): return self._rate
+	rate = property(_getRate, _setRate)
 	
-	def __setTrigger(self, val):
-		self.__trigger = val
-		self.__triggerSet = True
-	def __getTrigger(self): return self.__trigger
-	trigger = property(__getTrigger, __setTrigger)
+	def _setTrigger(self, val):
+		self._trigger = val
+		self._triggerSet = True
+	def _getTrigger(self): return self._trigger
+	trigger = property(_getTrigger, _setTrigger)
 	
-	def __setRange(self, val):
-		self.__range = val
-		self.__rangeSet = True
-	def __getRange(self): return self.__range
-	range = property(__getRange, __setRange)
+	def _setRange(self, val):
+		self._range = val
+		self._rangeSet = True
+	def _getRange(self): return self._range
+	range = property(_getRange, _setRange)
 	
-	def __setEndless(self, val):
-		self.__endless = val
-	def __getEndless(self): return self.__endless
-	endless = property(__getEndless, __setEndless)
+	def _setEndless(self, val):
+		self._endless = val
+	def _getEndless(self): return self._endless
+	endless = property(_getEndless, _setEndless)
 	
 	def _parseTokens(self, tokens):
 		if tokens[0] == "rate":
@@ -553,27 +555,27 @@ class Timer(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy timer\n")
 		self._dumpHeader(fileHandle)
-		if self.__rateSet:
+		if self._rateSet:
 			fileHandle.write("    rate    %s\n" % formatFloat(self.rate))
-		if self.__triggerSet:
+		if self._triggerSet:
 			fileHandle.write("    trigger %s\n" % self.trigger)
-		if self.__rangeSet:
+		if self._rangeSet:
 			fileHandle.write("    range %s %s\n" % (formatFloat(self.range[0]), formatFloat(self.range[1])))
-		if self.__endless:
+		if self._endless:
 			fileHandle.write("    endless\n")
 		self._dumpFooter(fileHandle)
 
 class Macro(Node):
 	def __init__(self):
 		super(Macro, self).__init__()
-		self.__child = 0
-		self.__childSet = False
+		self._child = 0
+		self._childSet = False
 		
-	def __setChild(self, val):
-		self.__child = val
-		self.__childSet = True
-	def __getChild(self): return self.__child
-	child = property(__getChild, __setChild)
+	def _setChild(self, val):
+		self._child = val
+		self._childSet = True
+	def _getChild(self): return self._child
+	child = property(_getChild, _setChild)
 		
 	def _parseTokens(self, tokens):
 		if tokens[0] == "child":
@@ -582,7 +584,7 @@ class Macro(Node):
 	def dump(self, fileHandle):
 		fileHandle.write("fuzzy macro\n")
 		self._dumpHeader(fileHandle)
-		if self.__childSet:
+		if self._childSet:
 			fileHandle.write("    child %d\n" % self.child)
 		self._dumpFooter(fileHandle)
 

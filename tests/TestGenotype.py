@@ -27,9 +27,9 @@ import difflib
 import filecmp
 
 import ns.bridge.io.CDLReader as CDLReader
-import ns.bridge.io.CDLWriter as CDLWriter
+import ns.evolve.Genotype as Genotype
 
-class TestIO(unittest.TestCase):
+class TestGenotype(unittest.TestCase):
 	
 	def setUp(self):
 		self.scratchFile = "R:/scratch/out.cdl"
@@ -40,25 +40,23 @@ class TestIO(unittest.TestCase):
 		except:
 			pass
 
-	def testFuzzy(self):
-		input = "R:/massive/testdata/cdl/man/CDL/fuzzy_nodes.cdl"
+	def testOutputChannels(self):
+		'''	Test that the Genotype calculates the right output channels. '''
+		input = "R:/massive/testdata/cdl/man/CDL/embedded_simple.cdl"
 	
-		agentSpec = CDLReader.read(input, ["fuzzy"])
-		
-		nodes = agentSpec.brain.nodes()
-		self.assertEqual(30, len(nodes))
 
-		fileHandle = open(self.scratchFile, "w")
-		CDLWriter.write(fileHandle, agentSpec)
-		fileHandle.close()
-	
-		inputHandle = open(input, "r")
-		scratchHandle = open(self.scratchFile, "r")
-		inputLines = inputHandle.readlines()[1:]
-		scratchLines = scratchHandle.readlines()[1:]
-		inputHandle.close()
-		scratchHandle.close()
-		self.assertEqual(inputLines, scratchLines)
+		agentSpec = CDLReader.read(input, ["fuzzy", "variable", "action"])
+		geno = Genotype.Genotype(agentSpec)
+
+		expectedChannels = [ "ty", "rx", "ry", "rz",
+						  	 "height", "leg_length", "shirt_map",
+						  	 "walk", "walk_45L", "walk_sad",
+						  	 "walk->walk_45L", "walk->walk_sad",
+						  	 "walk_45L->walk", "walk_45L->walk_sad",
+						  	 "walk_sad->walk", "walk_sad->walk_45L",
+						  	 "walk:rate", "walk_45L:rate", "walk_sad:rate" ]
+						  	 
+		self.assertEqual(sorted(expectedChannels), sorted(geno.outputChannels()))
 		#os.system("xdiff.exe %s %s" % (input, self.scratchFile))
 
 if __name__ == '__main__':

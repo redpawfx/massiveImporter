@@ -71,7 +71,8 @@ _extraFiles = [
 		]
 
 _testFiles = [
-		"tests/TestEvolveIO.py"
+		"tests/TestIO.py",
+		"tests/TestGenotype.py"
 		]
 
 _iconFiles = [

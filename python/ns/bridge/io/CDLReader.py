@@ -579,7 +579,7 @@ def read(cdlFile, handledTokens=DEFAULT_TOKENS):
 		 		fileHandle.close()	
 	except Exception, e:
 		print >> sys.stderr, "Error reading CDL file: %s" % e
-		raise e
+		raise
 	
 	return agentSpec
 
