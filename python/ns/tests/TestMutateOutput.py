@@ -23,115 +23,11 @@
 import sys
 import os
 import unittest
-import difflib
-import filecmp
-import random
-import traceback
 
 import ns.bridge.io.CDLReader as CDLReader
 import ns.evolve.Genotype as Genotype
+import ns.tests.TestUtil as TestUtil
 
-class NotRandomOutputs(object):
-	
-	def __init__(self):
-		self._floatOutputs = []
-		self._intOutputs = []
-		self._floatIndex = 0
-		self._intIndex = 0
-		self._floatDefault = 0.1
-		self._intDefault = 0
-		self._floatRandom = True
-		self._intRandom = True
-
-	def _setFloatOutputs(self, val):
-		self._floatOutputs = val
-		self._floatIndex = 0
-	def _getFloatOutputs(self): return self._floatOutputs
-	floatOutputs = property(_getFloatOutputs, _setFloatOutputs)
-
-	def _setIntOutputs(self, val):
-		self._intOutputs = val
-		self._intIndex = 0
-	def _getIntOutputs(self): return self._intOutputs
-	intOutputs = property(_getIntOutputs, _setIntOutputs)
-
-	def _setFloatDefault(self, val):
-		self._floatDefault = val
-		self._floatRandom = False
-		self._floatOutputs = []
-	def _getFloatDefault(self): return self._floatDefault
-	floatDefault = property(_getFloatDefault, _setFloatDefault)
-
-	def _setIntDefault(self, val):
-		self._intDefault = val
-		self._intRandom = False
-		self._intOutputs = []
-	def _getIntDefault(self): return self._intDefault
-	intDefault = property(_getIntDefault, _setIntDefault)
-	
-	def _setFloatRandom(self, val):
-		self._floatRandom = val
-		if val: self._floatOutputs = []
-	def _getFloatRandom(self): return self._floatRandom
-	floatRandom = property(_getFloatRandom, _setFloatRandom)
-
-	def _setIntRandom(self, val):
-		self._intRandom = val
-		if val: self._intOutputs = []
-	def _getIntRandom(self): return self._intRandom
-	intRandom = property(_getIntRandom, _setIntRandom)
-
-	def randInt(self, a, b):
-		if self.intOutputs and self._intIndex < len(self.intOutputs):
-			val = self._intOutputs[self._intIndex]
-		elif self.intRandom:
-			val = random.randint(a, b)
-		else:
-			val = self.intDefault
-		self._intIndex += 1
-		return val
-	
-	def randFloat(self):
-		if self.floatOutputs and self._floatIndex < len(self.floatOutputs):
-			val = self._floatOutputs[self._floatIndex]	
-		elif self.floatRandom:
-			val = random.random()
-		else:
-			val = self.floatDefault
-		self._floatIndex += 1
-		return val
-
-class NotRandom(object):
-	def __init__(self):
-		self._default = NotRandomOutputs()
-		self._context = {}
-		
-	def _getDefault(self): return self._default
-	default = property(_getDefault)
-
-	def getContext(self, name):
-		try:
-			context = self._context[name]
-		except:
-			self._context[name] = context = NotRandomOutputs()
-		return context
-		
-	def _getOutputs(self):
-		try:
-			outputs = self._context[sys._getframe(2).f_code.co_name]
-		except:
-			outputs = self.default
-		
-		return outputs
-		
-	def random(self):
-		return self._getOutputs().randFloat()
-	
-	def randint(self, a, b):
-		return self._getOutputs().randInt(a, b)
-	
-	def gauss(self, mu, sigma):
-		return self._getOutputs().randFloat()
 
 class TestMutateOutput(unittest.TestCase):
 	
@@ -139,7 +35,7 @@ class TestMutateOutput(unittest.TestCase):
 		input = "R:/massive/testdata/cdl/man/CDL/output.cdl"
 		self.agentSpec = CDLReader.read(input, CDLReader.kEvolveTokens)
 		self.geno = Genotype.Genotype(self.agentSpec)
-		self.geno.rand = NotRandom()
+		self.geno.rand = TestUtil.NotRandom()
 		
 	def tearDown(self):
 		try:
@@ -148,7 +44,7 @@ class TestMutateOutput(unittest.TestCase):
 			pass
 	
 	def testNoMutate(self):
-		''' None should mutate.'''
+		''' No Output parameters should mutate.'''
 		self.geno.rand.default.floatDefault = 0.1
 		self.geno.mutate()
 		
@@ -165,9 +61,9 @@ class TestMutateOutput(unittest.TestCase):
 		self.assertAlmostEqual(1.0, self.agentSpec.brain.getNode("unconnected").output)
 
 	def testAllMutate(self):
-		''' All should mutate.'''
+		''' All Output parameters should mutate.'''
 		self.geno.rand.default.floatDefault = 0.0
-		self.geno.rand.getContext("mutateFloat").floatOutputs = [0.5, 0.75]
+		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.75]
 		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
 		self.geno.mutate()
 		
@@ -190,17 +86,17 @@ class TestMutateOutput(unittest.TestCase):
 			Second:	"rx" - skips "ty" since it is unchanged
 			Third:	"walk_sad->walk_45L"	 
 		'''
-		self.geno.rand.default.intOutputs = [ 0 ]
+		self.geno.rand.default.intValues = [ 0 ]
 		self.geno.stringMutationRate = 0.99
 
 		self.geno.getNode("unconnected").mutateChannel()
 		self.assertEqual("ty", self.agentSpec.brain.getNode("unconnected").channel)
 		
-		self.geno.rand.default.intOutputs = [ 0, 1 ]
+		self.geno.rand.default.intValues = [ 0, 1 ]
 		self.geno.getNode("unconnected").mutateChannel()
 		self.assertEqual("rx", self.agentSpec.brain.getNode("unconnected").channel)
 
-		self.geno.rand.default.intOutputs = [ 10 ]
+		self.geno.rand.default.intValues = [ 10 ]
 		self.geno.getNode("unconnected").mutateChannel()
 		self.assertEqual("walk_sad->walk_45L", self.agentSpec.brain.getNode("unconnected").channel)
 
@@ -208,7 +104,7 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output integrate should mutate.
 			First: 	"speed"
 		'''
-		self.geno.rand.default.intOutputs = [ 0, 1 ]
+		self.geno.rand.default.intValues = [ 0, 1 ]
 		self.geno.stringMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateIntegrate()
 		self.assertEqual("speed", self.agentSpec.brain.getNode("unconnected").integrate)
@@ -225,7 +121,7 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output defuzz should mutate.
 			First: 	BLEND
 		'''
-		self.geno.rand.default.intOutputs = [ 0, 2 ]
+		self.geno.rand.default.intValues = [ 0, 2 ]
 		self.geno.stringMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateDefuzz()
 		self.assertEqual("BLEND", self.agentSpec.brain.getNode("unconnected").defuzz)
@@ -234,7 +130,7 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output range should mutate.
 			First: 	[0.5, 0.75]
 		'''
-		self.geno.rand.getContext("mutateFloat").floatOutputs = [0.5, 0.25, 0.75]
+		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.25, 0.75]
 		self.geno.rangeMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateRange()
 		self.assertEqual([0.5, 0.75], self.agentSpec.brain.getNode("unconnected").range)

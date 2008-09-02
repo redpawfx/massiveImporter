@@ -79,6 +79,8 @@ class Genotype(object):
 		for node in self.agentSpec.brain.nodes():
 			if isinstance(node, Brain.Output):
 				self._nodes.append(Mutate.Output(self, node))
+			if isinstance(node, Brain.Defuzz):
+				self._nodes.append(Mutate.Defuzz(self, node))
 	
 	def _initOutputChannels(self):
 		'''	defaultChannels +

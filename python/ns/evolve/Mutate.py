@@ -115,3 +115,21 @@ class Output(Node):
 		  	not self.node.altInputs and
 		  	self.shouldMutate(self._geno.floatMutationRate)):
 			self.node.output = self.mutateFloat(self.node.output)
+
+class Defuzz(Node):
+	def __init__(self, genotype, node):
+		super(Defuzz, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateDefuzz()
+		self.mutateElse()
+		
+	def mutateDefuzz(self):
+		''' Defuzz (float)'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.defuzz = self.mutateFloat(self.node.defuzz)
+
+	def mutateElse(self):
+		''' Else (bool)'''
+		if self.shouldMutate(self._geno.boolMutationRate):
+			self.node.isElse = not self.node.isElse

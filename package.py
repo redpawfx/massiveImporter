@@ -53,9 +53,11 @@ _pyFiles = [
 		"ns/msv/Maya.py",
 		"ns/evolve/Genotype.py",
 		"ns/evolve/Mutate.py",
+		"ns/tests/TestUtil.py",
 		"ns/tests/TestGenotype.py",
 		"ns/tests/TestIO.py",
-		"ns/tests/TestMutateOutput.py"
+		"ns/tests/TestMutateOutput.py",
+		"ns/tests/TestMutateDefuzz.py"
 		]
 
 _melFiles = [
