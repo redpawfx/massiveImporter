@@ -361,6 +361,8 @@ class Fuzz(Node):
 		
 		
 class Rule(Node):
+	kTypeValues = ["min", "prod"]
+	
 	def __init__(self):
 		super(Rule, self).__init__()
 		self._weight = 0.0

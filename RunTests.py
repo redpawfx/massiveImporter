@@ -29,6 +29,7 @@ import ns.tests.TestGenotype as TestGenotype
 import ns.tests.TestMutateOutput as TestMutateOutput
 import ns.tests.TestMutateDefuzz as TestMutateDefuzz
 import ns.tests.TestMutateOr as TestMutateOr
+import ns.tests.TestMutateAnd as TestMutateAnd
 
 if __name__ == '__main__':
 	try:
@@ -36,7 +37,8 @@ if __name__ == '__main__':
 				   TestGenotype.suite,
 				   TestMutateOutput.suite,
 				   TestMutateDefuzz.suite,
-				   TestMutateOr.suite ]
+				   TestMutateOr.suite,
+				   TestMutateAnd.suite ]
 		allTests = unittest.TestSuite(suites)
 
 		unittest.TextTestRunner(verbosity=2).run(allTests)

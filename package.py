@@ -58,7 +58,8 @@ _pyFiles = [
 		"ns/tests/TestIO.py",
 		"ns/tests/TestMutateOutput.py",
 		"ns/tests/TestMutateDefuzz.py",
-		"ns/tests/TestMutateOr.py"
+		"ns/tests/TestMutateOr.py",
+		"ns/tests/TestMutateAnd.py"
 		]
 
 _melFiles = [

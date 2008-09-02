@@ -151,3 +151,21 @@ class Or(Node):
 		''' Type (string)'''
 		if self.shouldMutate(self._geno.stringMutationRate):
 			self.node.type = self.mutateString(self.node.type, Brain.Or.kTypeValues)
+
+class Rule(Node):
+	def __init__(self, genotype, node):
+		super(Rule, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateWeight()
+		self.mutateType()
+		
+	def mutateWeight(self):
+		''' Weight (float)'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.weight = self.mutateFloat(self.node.weight)
+
+	def mutateType(self):
+		''' Type (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.type = self.mutateString(self.node.type, Brain.Rule.kTypeValues)
