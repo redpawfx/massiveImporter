@@ -28,13 +28,15 @@ import ns.tests.TestIO as TestIO
 import ns.tests.TestGenotype as TestGenotype
 import ns.tests.TestMutateOutput as TestMutateOutput
 import ns.tests.TestMutateDefuzz as TestMutateDefuzz
+import ns.tests.TestMutateOr as TestMutateOr
 
 if __name__ == '__main__':
 	try:
 		suites = [ TestIO.suite,
 				   TestGenotype.suite,
 				   TestMutateOutput.suite,
-				   TestMutateDefuzz.suite ]
+				   TestMutateDefuzz.suite,
+				   TestMutateOr.suite ]
 		allTests = unittest.TestSuite(suites)
 
 		unittest.TextTestRunner(verbosity=2).run(allTests)

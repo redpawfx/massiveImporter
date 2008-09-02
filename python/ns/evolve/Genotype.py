@@ -81,6 +81,8 @@ class Genotype(object):
 				self._nodes.append(Mutate.Output(self, node))
 			if isinstance(node, Brain.Defuzz):
 				self._nodes.append(Mutate.Defuzz(self, node))
+			if isinstance(node, Brain.Or):
+				self._nodes.append(Mutate.Or(self, node))
 	
 	def _initOutputChannels(self):
 		'''	defaultChannels +

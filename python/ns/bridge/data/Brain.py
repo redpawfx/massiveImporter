@@ -396,6 +396,8 @@ class Rule(Node):
 		self._dumpFooter(fileHandle)
 
 class Or(Node):
+	kTypeValues = ["max", "sum"]
+	
 	def __init__(self):
 		super(Or, self).__init__()
 		self._weight = 0.0
