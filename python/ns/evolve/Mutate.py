@@ -21,19 +21,39 @@
 # THE SOFTWARE.
 
 import sys
+import ns.bridge.data.Brain as Brain
 
 class Node(object):
 	def __init__(self, genotype, node):
 		self._geno = genotype
-		self._node = node
+		self.node = node
 		
 	def shouldMutate(self, rate):
 		return self._geno.rand.random() < rate
 		
 	def mutateString(self, curValue, validValues):
 		'''	Returns a random string value from validValues.'''
-		index = self._geno.rand.randint(0, len(validValues))
-		return validValues[index]
+		value = curValue
+		while (value == curValue):
+			index = self._geno.rand.randint(0, len(validValues) - 1)
+			value = validValues[index]
+		return value
+	
+	def mutateFloat(self, curValue):
+		'''	Returns a random float value within a gaussian distribution of
+			curValue.
+			TODO: scale the distribution size in proportion to curValue.'''
+		return self._geno.rand.gauss(curValue, 2)
+	
+	def mutateFloatRange(self, curValue):
+		'''	Individually mutates both the min and max of the range, making
+			sure that max is greater than or equal to min.'''
+		range = [ ]
+		range.append(self.mutateFloat(curValue[0]))
+		range.append(self.mutateFloat(curValue[1]))
+		while range[1] < range[0]:
+			range[1] = self.mutateFloat(curValue[1])
+		return range
 
 
 class Output(Node):
@@ -41,6 +61,57 @@ class Output(Node):
 		super(Output, self).__init__(genotype, node)
 
 	def mutate(self):
-		# output channel
-		if self.shouldMutate(self._geno.stringMutationRate()):
-			self._node.channel = self.mutateString(self._node.channel, self._geno.outputChannels())
+		self.mutateChannel()
+		self.mutateIntegrate()
+		self.mutateManual()
+		self.mutateDefuzz()
+		self.mutateRange()
+		self.mutateDelay()
+		self.mutateRate()
+		self.mutateOutput()
+		
+	def mutateChannel(self):
+		''' Channel (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.channel = self.mutateString(self.node.channel, self._geno.outputChannels())
+
+	def mutateIntegrate(self):
+		''' Integrate (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.integrate = self.mutateString(self.node.integrate, Brain.Output.kIntegrateValues)
+
+	def mutateManual(self):
+		''' Manual (bool)'''
+		if self.shouldMutate(self._geno.boolMutationRate):
+			self.node.manual = not self.node.manual
+
+	def mutateDefuzz(self):
+		''' Defuzz (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.defuzz = self.mutateString(self.node.defuzz, Brain.Output.kDefuzzValues)
+
+	def mutateRange(self):
+		''' Range (float, float)'''
+		if self.shouldMutate(self._geno.rangeMutationRate):
+			self.node.range = self.mutateFloatRange(self.node.range)
+
+	def mutateDelay(self):
+		''' Delay (float)'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.delay = self.mutateFloat(self.node.delay)
+
+	def mutateRate(self):
+		''' Rate (float)
+			aka: filter'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.rate = self.mutateFloat(self.node.rate)
+
+	def mutateOutput(self):
+		''' Output (float)
+			Only allowed to mutate if Output node is not connected and Manual
+			is set.'''
+		if (self.node.manual and
+		  	not self.node.inputs and
+		  	not self.node.altInputs and
+		  	self.shouldMutate(self._geno.floatMutationRate)):
+			self.node.output = self.mutateFloat(self.node.output)

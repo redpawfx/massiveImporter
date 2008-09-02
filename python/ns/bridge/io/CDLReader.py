@@ -28,7 +28,8 @@ import ns.bridge.io.WReader as WReader
 import ns.bridge.data.AgentSpec as AgentSpec
 import ns.bridge.data.Brain as Brain
 
-DEFAULT_TOKENS = ["object", "variable", "scale_var", "segment", "material", "cloth", "geometry", "option", "action", "bind_pose"]
+kDefaultTokens = ["object", "variable", "scale_var", "segment", "material", "cloth", "geometry", "option", "action", "bind_pose"]
+kEvolveTokens = ["fuzzy", "variable", "action"]
 
 def _resolvePath( rootPath, path ):
 	resolved = path
@@ -550,7 +551,7 @@ def _process(fileHandle, line, agentSpec, tokensSet):
 		tokens = line.strip().split()
 	
 	
-def read(cdlFile, handledTokens=DEFAULT_TOKENS):
+def read(cdlFile, handledTokens=kDefaultTokens):
 	'''	handledTokens: a list containing the tokens that should be parsed out
 		and handled. Any tokens not in this list will be stuffed into the
 		AgentSpec leftovers attribute.'''

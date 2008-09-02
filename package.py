@@ -11,7 +11,6 @@ _pyDstRoot = "%s/python" % _dstRoot
 _pluginsDstRoot = "%s/plug-ins" % _dstRoot
 _scriptsDstRoot = "%s/scripts" % _dstRoot
 _iconsDstRoot = "%s/icons" % _dstRoot
-_testsDstRoot = "%s/tests" % _dstRoot
 
 _pluginFiles = [ "plug-ins/MsvTools.py" ]
 
@@ -51,7 +50,12 @@ _pyFiles = [
 		"ns/bridge/io/SimReader.py",
 		"ns/bridge/io/WReader.py",
 		"ns/msv/MsvPlacement.py",
-		"ns/msv/Maya.py"
+		"ns/msv/Maya.py",
+		"ns/evolve/Genotype.py",
+		"ns/evolve/Mutate.py",
+		"ns/tests/TestGenotype.py",
+		"ns/tests/TestIO.py",
+		"ns/tests/TestMutateOutput.py"
 		]
 
 _melFiles = [
@@ -67,14 +71,9 @@ _extraFiles = [
 		"CHANGES.txt",
 		"MsvTools.txt",
 		"MsvTranslator.py",
-		"MsvEvolve.py"
+		"MsvEvolve.py",
+		"RunTests.py"
 		]
-
-_testFiles = [
-		"tests/TestIO.py",
-		"tests/TestGenotype.py"
-		]
-
 _iconFiles = [
 		]
 		
@@ -149,7 +148,6 @@ def main():
 	copyPythonFiles( _srcRoot, _pluginsDstRoot, _pluginFiles, flatten=True, compile=False )
 	copyFiles( _srcRoot, _scriptsDstRoot, _melFiles, True )
 	copyFiles( _srcRoot, _dstRoot, _extraFiles, True )
-	copyFiles( _srcRoot, _testsDstRoot, _testFiles, True )
 	copyFiles( _srcRoot, _iconsDstRoot, _iconFiles, True )
 
 if __name__ == "__main__":

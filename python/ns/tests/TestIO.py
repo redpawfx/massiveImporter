@@ -41,7 +41,9 @@ class TestIO(unittest.TestCase):
 			pass
 
 	def testFuzzy(self):
-		'''	Read the fuzzy nodes from a test file, write them out again, and
+		'''	Read and write fuzzy nodes from a test file.
+			
+			Read the fuzzy nodes from a test file, write them out again, and
 			compare the two files. They should be identical except for a
 			comment at the beginning of the files. '''
 		input = "R:/massive/testdata/cdl/man/CDL/fuzzy_nodes.cdl"
@@ -64,10 +66,6 @@ class TestIO(unittest.TestCase):
 		self.assertEqual(inputLines, scratchLines)
 		#os.system("xdiff.exe %s %s" % (input, self.scratchFile))
 
-if __name__ == '__main__':
-	try:
-		unittest.main()
-	finally:
-		sys.exit()
+suite = unittest.TestLoader().loadTestsFromTestCase(TestIO)
 
 	

@@ -26,7 +26,7 @@ import random
 import ns.bridge.data.Brain as Brain
 import ns.evolve.Mutate as Mutate
 
-class Random:
+class Random(object):
 	'''	A class to wrap the python random generator. This is so that I can
 		define a fake random generator for testing purposes. '''
 	def randint(self, a, b):
@@ -42,12 +42,38 @@ class Genotype(object):
 	def __init__(self, agentSpec):
 		self.agentSpec = agentSpec
 		self.rand = Random()
+		
+		self._stringRate= 0.1
+		self._boolRate= 0.1
+		self._rangeRate= 0.1
+		self._floatRate= 0.1
 		self._nodes = []
 		self._outputChannels = []
 		
 		self._initNodes()
 		self._initOutputChannels()
 		
+	def _setStringMutationRate(self, val):
+		self._stringRate = val
+	def _getStringMutationRate(self): return self._stringRate
+	stringMutationRate = property(_getStringMutationRate, _setStringMutationRate)
+		
+	def _setBoolMutationRate(self, val):
+		self._boolRate = val
+	def _getBoolMutationRate(self): return self._boolRate
+	boolMutationRate = property(_getBoolMutationRate, _setBoolMutationRate)
+
+	def _setRangeMutationRate(self, val):
+		self._rangeRate = val
+	def _getRangeMutationRate(self): return self._rangeRate
+	rangeMutationRate = property(_getRangeMutationRate, _setRangeMutationRate)
+
+	def _setFloatMutationRate(self, val):
+		self._floatRate = val
+	def _getFloatMutationRate(self): return self._floatRate
+	floatMutationRate = property(_getFloatMutationRate, _setFloatMutationRate)
+
+	
 	def _initNodes(self):
 		'''	Build a Mutate node for each Brain node. '''
 		for node in self.agentSpec.brain.nodes():
@@ -79,13 +105,16 @@ class Genotype(object):
 	def mutate(self):
 		for node in self._nodes:
 			node.mutate()
+			
+	def getNode(self, name):
+		for n in self._nodes:
+			if n.node.name == name:
+				return n
+		raise Error("No node named %s" % name)
 
 	def outputChannels(self):
 		'''	Return a list of all possible output channels. Includes actions,
 			variables, and built-in channels.'''
 		return self._outputChannels
 	
-	def stringMutationRate(self):
-		'''	How often string parameters should mutate.
-		 	TODO: this should be a user defined value. '''
-		return 0.1
+	

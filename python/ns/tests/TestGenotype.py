@@ -43,9 +43,8 @@ class TestGenotype(unittest.TestCase):
 	def testOutputChannels(self):
 		'''	Test that the Genotype calculates the right output channels. '''
 		input = "R:/massive/testdata/cdl/man/CDL/embedded_simple.cdl"
-	
 
-		agentSpec = CDLReader.read(input, ["fuzzy", "variable", "action"])
+		agentSpec = CDLReader.read(input, CDLReader.kEvolveTokens)
 		geno = Genotype.Genotype(agentSpec)
 
 		expectedChannels = [ "ty", "rx", "ry", "rz",
@@ -59,10 +58,6 @@ class TestGenotype(unittest.TestCase):
 		self.assertEqual(sorted(expectedChannels), sorted(geno.outputChannels()))
 		#os.system("xdiff.exe %s %s" % (input, self.scratchFile))
 
-if __name__ == '__main__':
-	try:
-		unittest.main()
-	finally:
-		sys.exit()
+suite = unittest.TestLoader().loadTestsFromTestCase(TestGenotype)
 
 	

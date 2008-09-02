@@ -192,6 +192,9 @@ class Input(Node):
 		self._dumpFooter(fileHandle)
 		
 class Output(Node):
+	kIntegrateValues = ["position", "speed"]
+	kDefuzzValues = ["COM", "MOM", "BLEND"]
+	
 	def __init__(self):
 		super(Output, self).__init__()
 		self._channel = ""
@@ -611,6 +614,12 @@ class Brain:
 		
 	def nodes(self):
 		return self._ordered
+	
+	def getNode(self, name):
+		for node in self._ordered:
+			if node.name == name:
+				return node
+		raise Error("No node named %s" % name)
 		
 	def loadNode(self, fileHandle, tokens):
 		if "input" == tokens[1]:
