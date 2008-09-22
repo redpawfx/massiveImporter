@@ -304,6 +304,14 @@ class Output(Node):
 		self._dumpFooter(fileHandle)
 				
 class Fuzz(Node):
+	kInterpolationValues = ["cosine", "linear"]
+	kInferenceValues = ["z", "lamda", "pi", "s", "singleton"]
+	kInferenceNum = {'z':2,
+					 'lamda':3,
+					 'pi':4,
+					 's':2,
+					 'singleton':1}
+	
 	def __init__(self):
 		super(Fuzz, self).__init__()
 		self._inference = ""

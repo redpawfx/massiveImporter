@@ -46,7 +46,7 @@ class TestMutateOutput(unittest.TestCase):
 	def testNoMutate(self):
 		''' No Output parameters should mutate.'''
 		self.geno.rand.default.floatDefault = 0.1
-		self.geno.mutate()
+		self.geno.getNode("unconnected").mutate()
 		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(5, len(nodes))
@@ -65,7 +65,7 @@ class TestMutateOutput(unittest.TestCase):
 		self.geno.rand.default.floatDefault = 0.0
 		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.75]
 		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
-		self.geno.mutate()
+		self.geno.getNode("unconnected").mutate()
 		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(5, len(nodes))
@@ -130,8 +130,9 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output range should mutate.
 			First: 	[0.5, 0.75]
 		'''
+		self.geno.rand.getContext("shouldMutate").floatRandom = False
+		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
 		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.25, 0.75]
-		self.geno.rangeMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateRange()
 		self.assertEqual([0.5, 0.75], self.agentSpec.brain.getNode("unconnected").range)
 
@@ -139,7 +140,8 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output delay should mutate.
 			First: 	0.5
 		'''
-		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
+		self.geno.rand.default.floatRandom = False
+		self.geno.rand.default.floatDefault = 0.5
 		self.geno.floatMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateDelay()
 		self.assertAlmostEqual(0.5, self.agentSpec.brain.getNode("unconnected").delay)

@@ -120,6 +120,9 @@ class NotRandom(object):
 	def random(self):
 		return self._getValues().randFloat()
 	
+	def uniform(self, a, b):
+		return self._getValues().randFloat()
+	
 	def randint(self, a, b):
 		return self._getValues().randInt(a, b)
 	

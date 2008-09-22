@@ -55,7 +55,19 @@ class Node(object):
 			range[1] = self.mutateFloat(curValue[1])
 		return range
 
-
+	def mutateFloatList(self, numValues, curValues):
+		list = []
+		for i in range(numValues):
+			while(True):
+				if i < len(curValues):
+					val = self.mutateFloat(curValues[i])
+				else:
+					val = self._geno.rand.uniform(list[i-1], list[i-1] * 2)
+				if (i == 0 or val > list[i-1]):
+					break
+			list.append(val)
+		return list
+				
 class Output(Node):
 	def __init__(self, genotype, node):
 		super(Output, self).__init__(genotype, node)
@@ -169,3 +181,34 @@ class Rule(Node):
 		''' Type (string)'''
 		if self.shouldMutate(self._geno.stringMutationRate):
 			self.node.type = self.mutateString(self.node.type, Brain.Rule.kTypeValues)
+
+class Fuzz(Node):
+	def __init__(self, genotype, node):
+		super(Fuzz, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateCurve()
+		self.mutateInterpolation()
+		self.mutateWrap()
+		
+	def mutateCurve(self):
+		''' Inference (String) Points (float(s))'''
+		mutatePoints = False
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.inference = self.mutateString(self.node.inference, Brain.Fuzz.kInferenceValues)
+			mutatePoints = True
+		else:
+			mutatePoints = self.shouldMutate(self._geno.listMutationRate)
+		if mutatePoints:
+			self.node.inferencePoints = self.mutateFloatList(Brain.Fuzz.kInferenceNum[self.node.inference],
+															  self.node.inferencePoints)
+	def mutateInterpolation(self):
+		''' Interpolation (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.interpolation = self.mutateString(self.node.interpolation, Brain.Fuzz.kInterpolationValues)
+
+	def mutateWrap(self):
+		''' Wrap (bool)'''
+		if self.shouldMutate(self._geno.boolMutationRate):
+			self.node.wrap = not self.node.wrap
+

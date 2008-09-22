@@ -79,6 +79,10 @@ class TestMutateOr(unittest.TestCase):
 		''' Or type should mutate.
 			First: 	"sum"
 		'''
+		self.geno.rand.default.floatRandom = False
+		self.geno.rand.default.floatDefault = 0.5
+		self.geno.rand.default.intRandom = False
+		self.geno.rand.default.intDefault = 1
 		self.geno.stringMutationRate = 0.99
 		self.geno.getNode("or").mutateType()
 		self.assertEqual("sum", self.agentSpec.brain.getNode("or").type)

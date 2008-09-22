@@ -25,6 +25,7 @@ import random
 
 import ns.bridge.data.Brain as Brain
 import ns.evolve.Mutate as Mutate
+import ns.py.Errors as Errors
 
 class Random(object):
 	'''	A class to wrap the python random generator. This is so that I can
@@ -35,6 +36,9 @@ class Random(object):
 	def random(self):
 		return random.random()
 	
+	def uniform(self, a, b):
+		return random.uniform(a, b)
+	
 	def gauss(self, mu, sigma):
 		return random.gauss(mu, sigma)
 
@@ -43,10 +47,11 @@ class Genotype(object):
 		self.agentSpec = agentSpec
 		self.rand = Random()
 		
-		self._stringRate= 0.1
-		self._boolRate= 0.1
-		self._rangeRate= 0.1
-		self._floatRate= 0.1
+		self._stringRate = 0.1
+		self._boolRate = 0.1
+		self._rangeRate = 0.1
+		self._floatRate = 0.1
+		self._listRate = 0.1
 		self._nodes = []
 		self._outputChannels = []
 		
@@ -73,6 +78,10 @@ class Genotype(object):
 	def _getFloatMutationRate(self): return self._floatRate
 	floatMutationRate = property(_getFloatMutationRate, _setFloatMutationRate)
 
+	def _setListMutationRate(self, val):
+		self._listRate = val
+	def _getListMutationRate(self): return self._listRate
+	listMutationRate = property(_getListMutationRate, _setListMutationRate)
 	
 	def _initNodes(self):
 		'''	Build a Mutate node for each Brain node. '''
@@ -85,6 +94,8 @@ class Genotype(object):
 				self._nodes.append(Mutate.Or(self, node))
 			if isinstance(node, Brain.Rule):
 				self._nodes.append(Mutate.Rule(self, node))
+			if isinstance(node, Brain.Fuzz):
+				self._nodes.append(Mutate.Fuzz(self, node))
 	
 	def _initOutputChannels(self):
 		'''	defaultChannels +
@@ -116,7 +127,7 @@ class Genotype(object):
 		for n in self._nodes:
 			if n.node.name == name:
 				return n
-		raise Error("No node named %s" % name)
+		raise Errors.Error("No node named %s" % name)
 
 	def outputChannels(self):
 		'''	Return a list of all possible output channels. Includes actions,
