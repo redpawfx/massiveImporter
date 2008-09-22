@@ -224,3 +224,32 @@ class Noise(Node):
 		if self.shouldMutate(self._geno.floatMutationRate):
 			self.node.rate = self.mutateFloat(self.node.rate)
 
+class Timer(Node):
+	def __init__(self, genotype, node):
+		super(Timer, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateRate()
+		self.mutateTrigger()
+		self.mutateRange()
+		self.mutateEndless()
+		
+	def mutateRate(self):
+		''' Rate (float)'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.rate = self.mutateFloat(self.node.rate)
+
+	def mutateTrigger(self):
+		''' Trigger (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.trigger = self.mutateString(self.node.trigger, Brain.Timer.kTriggerValues)
+
+	def mutateRange(self):
+		''' Range (float, float)'''
+		if self.shouldMutate(self._geno.rangeMutationRate):
+			self.node.range = self.mutateFloatRange(self.node.range)
+
+	def mutateEndless(self):
+		''' Endless (bool)'''
+		if self.shouldMutate(self._geno.boolMutationRate):
+			self.node.endless = not self.node.endless

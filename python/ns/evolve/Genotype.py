@@ -98,7 +98,9 @@ class Genotype(object):
 				self._nodes.append(Mutate.Fuzz(self, node))
 			if isinstance(node, Brain.Noise):
 				self._nodes.append(Mutate.Noise(self, node))
-				
+			if isinstance(node, Brain.Timer):
+				self._nodes.append(Mutate.Timer(self, node))
+								
 	def _initOutputChannels(self):
 		'''	defaultChannels +
 			action + action:rate + action1->action2 +

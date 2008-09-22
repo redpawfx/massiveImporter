@@ -524,6 +524,8 @@ class Noise(Node):
 		self._dumpFooter(fileHandle)
 				
 class Timer(Node):
+	kTriggerValues = ["if_stopped", "always"]
+	
 	def __init__(self):
 		super(Timer, self).__init__()
 		self._rate = 0

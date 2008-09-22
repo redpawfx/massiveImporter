@@ -45,7 +45,6 @@ class TestMutateFuzz(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Fuzz parameters should mutate.'''
-		self.geno.rand.default.floatRandom = False
 		self.geno.rand.default.floatDefault = 0.1
 		self.geno.mutate()
 		
@@ -59,7 +58,6 @@ class TestMutateFuzz(unittest.TestCase):
 
 	def testAllMutate(self):
 		''' All Fuzz parameters should mutate.'''
-		self.geno.rand.getContext("shouldMutate").floatRandom = False
 		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
 		self.geno.mutate()
 		
@@ -74,9 +72,7 @@ class TestMutateFuzz(unittest.TestCase):
 	def testMutateCurveInference1(self):
 		''' Fuzz inference should mutate triggering the points to mutate (more points).
 		'''
-		self.geno.rand.getContext("shouldMutate").floatRandom = False
 		self.geno.rand.getContext("shouldMutate").floatValues = [ 0.0, 1.0 ]
-		self.geno.rand.getContext("mutateString").intRandom = False
 		self.geno.rand.getContext("mutateString").intDefault = 2
 		self.geno.getNode("fuzz").mutateCurve()
 		self.assertEqual("pi", self.agentSpec.brain.getNode("fuzz").inference)
@@ -90,9 +86,7 @@ class TestMutateFuzz(unittest.TestCase):
 	def testMutateCurveInference2(self):
 		''' Fuzz inference should mutate triggering the points to mutate (fewer points).
 		'''
-		self.geno.rand.getContext("shouldMutate").floatRandom = False
 		self.geno.rand.getContext("shouldMutate").floatValues = [ 0.0, 1.0 ]
-		self.geno.rand.getContext("mutateString").intRandom = False
 		self.geno.rand.getContext("mutateString").intDefault = 0
 		self.geno.rand.default.floatValues = [ 0.5, 0.4, 0.5, 0.8 ]
 		self.geno.getNode("fuzz").mutateCurve()
@@ -106,9 +100,7 @@ class TestMutateFuzz(unittest.TestCase):
 		''' Fuzz inference points should mutate even though inference type did
 			not
 		'''
-		self.geno.rand.getContext("shouldMutate").floatRandom = False
 		self.geno.rand.getContext("shouldMutate").floatValues = [ 1.0, 0.0 ]
-		self.geno.rand.getContext("mutateString").intRandom = False
 		self.geno.rand.getContext("mutateString").intDefault = 2
 		self.geno.getNode("fuzz").mutateCurve()
 		self.assertEqual("lamda", self.agentSpec.brain.getNode("fuzz").inference)
@@ -130,7 +122,6 @@ class TestMutateFuzz(unittest.TestCase):
 		''' Fuzz wrap should mutate.
 			First: True
 		'''
-		self.geno.rand.default.floatRandom = False
 		self.geno.rand.default.floatDefault = 0.0
 		self.geno.getNode("fuzz").mutateWrap()
 		self.assertEqual(True, self.agentSpec.brain.getNode("fuzz").wrap)

@@ -86,8 +86,8 @@ class TestMutateOutput(unittest.TestCase):
 			Second:	"rx" - skips "ty" since it is unchanged
 			Third:	"walk_sad->walk_45L"	 
 		'''
+		self.geno.rand.default.floatDefault = 0.0
 		self.geno.rand.default.intValues = [ 0 ]
-		self.geno.stringMutationRate = 0.99
 
 		self.geno.getNode("unconnected").mutateChannel()
 		self.assertEqual("ty", self.agentSpec.brain.getNode("unconnected").channel)
@@ -130,7 +130,6 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output range should mutate.
 			First: 	[0.5, 0.75]
 		'''
-		self.geno.rand.getContext("shouldMutate").floatRandom = False
 		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
 		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.25, 0.75]
 		self.geno.getNode("unconnected").mutateRange()
@@ -140,7 +139,6 @@ class TestMutateOutput(unittest.TestCase):
 		''' Output delay should mutate.
 			First: 	0.5
 		'''
-		self.geno.rand.default.floatRandom = False
 		self.geno.rand.default.floatDefault = 0.5
 		self.geno.floatMutationRate = 0.99
 		self.geno.getNode("unconnected").mutateDelay()
