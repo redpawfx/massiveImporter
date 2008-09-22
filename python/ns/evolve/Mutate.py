@@ -212,3 +212,15 @@ class Fuzz(Node):
 		if self.shouldMutate(self._geno.boolMutationRate):
 			self.node.wrap = not self.node.wrap
 
+class Noise(Node):
+	def __init__(self, genotype, node):
+		super(Noise, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateRate()
+		
+	def mutateRate(self):
+		''' Rate (float)'''
+		if self.shouldMutate(self._geno.floatMutationRate):
+			self.node.rate = self.mutateFloat(self.node.rate)
+

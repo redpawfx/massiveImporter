@@ -31,6 +31,7 @@ import ns.tests.TestMutateDefuzz as TestMutateDefuzz
 import ns.tests.TestMutateOr as TestMutateOr
 import ns.tests.TestMutateAnd as TestMutateAnd
 import ns.tests.TestMutateFuzz as TestMutateFuzz
+import ns.tests.TestMutateNoise as TestMutateNoise
 
 if __name__ == '__main__':
 	try:
@@ -40,7 +41,8 @@ if __name__ == '__main__':
 				   TestMutateDefuzz.suite,
 				   TestMutateOr.suite,
 				   TestMutateAnd.suite,
-				   TestMutateFuzz.suite ]
+				   TestMutateFuzz.suite,
+				   TestMutateNoise.suite ]
 		allTests = unittest.TestSuite(suites)
 
 		unittest.TextTestRunner(verbosity=2).run(allTests)
