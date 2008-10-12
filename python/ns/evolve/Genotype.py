@@ -52,11 +52,14 @@ class Genotype(object):
 		self._rangeRate = 0.1
 		self._floatRate = 0.1
 		self._listRate = 0.1
+		self._switchRate = 0.1
 		self._nodes = []
 		self._outputChannels = []
+		self._inputChannels = []
 		
 		self._initNodes()
 		self._initOutputChannels()
+		self._initInputChannels()
 		
 	def _setStringMutationRate(self, val):
 		self._stringRate = val
@@ -82,6 +85,12 @@ class Genotype(object):
 		self._listRate = val
 	def _getListMutationRate(self): return self._listRate
 	listMutationRate = property(_getListMutationRate, _setListMutationRate)
+
+	def _setSwitchMutationRate(self, val):
+		self._switchRate = val
+	def _getSwitchMutationRate(self): return self._switchRate
+	switchMutationRate = property(_getSwitchMutationRate, _setSwitchMutationRate)
+
 	
 	def _initNodes(self):
 		'''	Build a Mutate node for each Brain node. '''
@@ -100,6 +109,8 @@ class Genotype(object):
 				self._nodes.append(Mutate.Noise(self, node))
 			if isinstance(node, Brain.Timer):
 				self._nodes.append(Mutate.Timer(self, node))
+			if isinstance(node, Brain.Input):
+				self._nodes.append(Mutate.Input(self, node))
 								
 	def _initOutputChannels(self):
 		'''	defaultChannels +
@@ -108,6 +119,8 @@ class Genotype(object):
 			Only variables without expressions are included. '''
 			
 		# default channels
+		# Don't allow tx or tz cause we want to agent to move using walk
+		# cycles and not just slide over the ground
 		self._outputChannels = [ "ty", "rx", "ry", "rz" ]
 		
 		# action + action:rate + action1->action2
@@ -122,6 +135,25 @@ class Genotype(object):
 		for variable in self.agentSpec.variables.values():
 			if not variable.expression:
 				self._outputChannels.append(variable.name)
+				
+	def _initInputChannels(self):
+		'''	defaultChannels +
+			action + action:rate + action1->action2 +
+			variable
+			Only variables without expressions are included. '''
+			
+		# default channels
+		self._inputChannels = [ "tx", "ty", "tz",
+							 	"rx", "ry", "rz",
+							 	"lx", "ly", "lz",
+							 	"ground", "ground.dx", "ground.dy",
+							 	"sound.d", "sound.x", "sound.z" ]
+		
+		# action + action:rate + action:running
+		for action in self.agentSpec.actions.values():
+			self._outputChannels.append(action.name)
+			self._outputChannels.append("%s:rate" % action.name)
+			self._outputChannels.append("%s:running" % action.name)
 		
 	def mutate(self):
 		for node in self._nodes:
@@ -138,4 +170,7 @@ class Genotype(object):
 			variables, and built-in channels.'''
 		return self._outputChannels
 	
-	
+	def inputChannels(self):
+		'''	Return a list of all possible in channels. Includes actions,
+			variables, and built-in channels.'''
+		return self._inputChannels	

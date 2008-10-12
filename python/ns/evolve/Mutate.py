@@ -253,3 +253,40 @@ class Timer(Node):
 		''' Endless (bool)'''
 		if self.shouldMutate(self._geno.boolMutationRate):
 			self.node.endless = not self.node.endless
+
+class Input(Node):
+	def __init__(self, genotype, node):
+		super(Input, self).__init__(genotype, node)
+
+	def mutate(self):
+		self.mutateValue()
+		self.mutateIntegrate()
+		self.mutateRange()
+		
+	def mutateValue(self):
+		''' Mutate either the Channel (string) or the Output (float)
+			If the channel is set and it should mutate, switch to
+			output for some percentage of the time. And vice versa.'''
+		if self.node.channel:
+			if self.shouldMutate(self._geno.stringMutationRate):
+				if self.shouldMutate(self._geno.switchMutationRate):
+					self.node.channel = ""
+					self.node.output = self.mutateFloat(self.node.output)
+				else:
+					self.node.channel = self.mutateString(self.node.channel, self._geno.inputChannels())
+		elif self.shouldMutate(self._geno.floatMutationRate):
+			if self.shouldMutate(self._geno.switchMutationRate):
+				self.node.channel = self.mutateString(self.node.channel, self._geno.inputChannels())
+			else:
+				self.node.output = self.mutateFloat(self.node.output)
+
+	def mutateIntegrate(self):
+		''' Integrate (string)'''
+		if self.shouldMutate(self._geno.stringMutationRate):
+			self.node.integrate = self.mutateString(self.node.integrate, Brain.Input.kIntegrateValues)
+
+	def mutateRange(self):
+		''' Range (float, float)'''
+		if self.shouldMutate(self._geno.rangeMutationRate):
+			self.node.range = self.mutateFloatRange(self.node.range)
+

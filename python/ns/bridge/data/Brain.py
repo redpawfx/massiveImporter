@@ -131,6 +131,8 @@ class Node(object):
 			fileHandle.write("    parent %d\n" % self.parent)
 
 class Input(Node):
+	kIntegrateValues = ["position", "speed"]
+	
 	def __init__(self):
 		super(Input, self).__init__()
 		self._channel = ""
