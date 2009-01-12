@@ -42,6 +42,10 @@ class Node(object):
 		self._parent = 0
 		self._parentSet = False
 
+		# Incremented by connect, decremented by disconnect
+		# Initialized by calling Brain.countOutputConnections
+		self._numOutputs = 0
+
 	def _setId(self, val):
 		self._id = val
 		self._idSet = True
@@ -77,6 +81,16 @@ class Node(object):
 		self._parentSet = True
 	def _getParent(self): return self._parent
 	parent = property(_getParent, _setParent)
+	
+	def _setNumOutputs(self, val): self._numOutputs = val
+	def _getNumOutputs(self): return self._numOutputs
+	numOutputs = property(_getNumOutputs, _setNumOutputs)
+	
+	def connect(self, node):
+		self._numOutputs += 1
+		  	
+	def disconnect(self, node):
+		self._numOutputs -= 1
 
 	def load(self, fileHandle):
 		line = ""
@@ -619,7 +633,12 @@ class Comment(Node):
 		
 class Brain:
 	def __init__(self):
+		# list of nodes indexed by id
+		# probably non-sparse, but theoretically sparse
 		self._nodes = []
+		# list of nodes ordered by when they were loaded (so that we can
+		# export the nodes in the same order they were imported)
+		# non-sparse
 		self._ordered = []
 		
 	def addNode(self, node):
@@ -665,6 +684,13 @@ class Brain:
 		self.addNode(node)
 		
 		return line
+	
+	def countOutputConnections(self):
+		for node in self._ordered:
+			for input in node.inputs:
+				self._nodes[input].numOutputs += 1
+			for input in node.altInputs:
+				self._nodes[input].numOutputs += 1
 		
 	def dump(self, fileHandle):
 		for node in self._ordered:

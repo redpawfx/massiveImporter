@@ -45,29 +45,33 @@ class TestMutateTimer(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Timer parameters should mutate.'''
-		self.geno.rand.getContext("shouldMutate").floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertAlmostEqual(1.0, self.agentSpec.brain.getNode("timer").rate)
-		self.assertEqual("if_stopped", self.agentSpec.brain.getNode("timer").trigger)
-		self.assertEqual([0.0, 1.0], self.agentSpec.brain.getNode("timer").range)
-		self.assertEqual(False, self.agentSpec.brain.getNode("timer").endless)
+		self.geno.rand.getContext("shouldMutate").floatDefault = 0.1
+		
+		self.geno.getNode("timer").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("timer")
+		self.assertAlmostEqual(1.0, node.rate)
+		self.assertEqual("if_stopped", node.trigger)
+		self.assertEqual([0.0, 1.0], node.range)
+		self.assertEqual(False, node.endless)
 
 	def testAllMutate(self):
 		''' All Timer parameters should mutate.'''
-		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
+
+		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
 		
-		self.assertNotAlmostEqual(1.0, self.agentSpec.brain.getNode("timer").rate)
-		self.assertNotEqual("if_stopped", self.agentSpec.brain.getNode("timer").trigger)
-		self.assertNotEqual([0.0, 1.0], self.agentSpec.brain.getNode("timer").range)
-		self.assertNotEqual(False, self.agentSpec.brain.getNode("timer").endless)
+		self.geno.getNode("timer").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("timer")
+		self.assertNotAlmostEqual(1.0, node.rate)
+		self.assertNotEqual("if_stopped", node.trigger)
+		self.assertNotEqual([0.0, 1.0], node.range)
+		self.assertNotEqual(False, node.endless)
 
 	def testMutateRate(self):
 		''' Timer rate should mutate.

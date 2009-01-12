@@ -45,29 +45,33 @@ class TestMutateFuzz(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Fuzz parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertEqual("lamda", self.agentSpec.brain.getNode("fuzz").inference)
-		self.assertEqual([0.25, 0.5, 0.75], self.agentSpec.brain.getNode("fuzz").inferencePoints)
-		self.assertEqual("cosine", self.agentSpec.brain.getNode("fuzz").interpolation)
-		self.assertEqual(False, self.agentSpec.brain.getNode("fuzz").wrap)
+		self.geno.rand.default.floatDefault = 0.1
+		
+		self.geno.getNode("fuzz").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("fuzz")
+		self.assertEqual("lamda", node.inference)
+		self.assertEqual([0.25, 0.5, 0.75], node.inferencePoints)
+		self.assertEqual("cosine", node.interpolation)
+		self.assertEqual(False, node.wrap)
 
 	def testAllMutate(self):
 		''' All Fuzz parameters should mutate.'''
-		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertNotEqual("lamda", self.agentSpec.brain.getNode("fuzz").inference)
-		self.assertNotEqual([0.25, 0.5, 0.75], self.agentSpec.brain.getNode("fuzz").inferencePoints)
-		self.assertNotEqual("cosine", self.agentSpec.brain.getNode("fuzz").interpolation)
-		self.assertNotEqual(False, self.agentSpec.brain.getNode("fuzz").wrap)
+		self.geno.rand.getContext("shouldMutate").floatDefault = 0.0
+
+		self.geno.getNode("fuzz").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("fuzz")
+		self.assertNotEqual("lamda", node.inference)
+		self.assertNotEqual([0.25, 0.5, 0.75], node.inferencePoints)
+		self.assertNotEqual("cosine", node.interpolation)
+		self.assertNotEqual(False, node.wrap)
 
 	def testMutateCurveInference1(self):
 		''' Fuzz inference should mutate triggering the points to mutate (more points).
@@ -114,6 +118,7 @@ class TestMutateFuzz(unittest.TestCase):
 		''' Fuzz interpolation should mutate.
 			First: 	"linear"
 		'''
+		self.geno.floatDefault = 0.0
 		self.geno.stringMutationRate = 0.99
 		self.geno.getNode("fuzz").mutateInterpolation()
 		self.assertEqual("linear", self.agentSpec.brain.getNode("fuzz").interpolation)

@@ -34,19 +34,24 @@ import ns.tests.TestMutateFuzz as TestMutateFuzz
 import ns.tests.TestMutateNoise as TestMutateNoise
 import ns.tests.TestMutateTimer as TestMutateTimer
 import ns.tests.TestMutateInput as TestMutateInput
+import ns.tests.TestMutateConnections as TestMutateConnections
+import ns.tests.TestFlipInputs as TestFlipInputs
 
 if __name__ == '__main__':
 	try:
-		suites = [ #TestIO.suite,
-				   #TestGenotype.suite,
-				   #TestMutateOutput.suite,
-				   #TestMutateDefuzz.suite,
-				   #TestMutateOr.suite,
-				   #TestMutateAnd.suite,
-				   #TestMutateFuzz.suite,
-				   #TestMutateNoise.suite,
-				   #TestMutateTimer.suite,
-				   TestMutateInput.suite ]
+		suites = [ TestIO.suite,
+				   TestGenotype.suite,
+				   TestMutateOutput.suite,
+				   TestMutateDefuzz.suite,
+				   TestMutateOr.suite,
+				   TestMutateAnd.suite,
+				   TestMutateFuzz.suite,
+				   TestMutateNoise.suite,
+				   TestMutateTimer.suite,
+				   TestMutateInput.suite,
+				   TestMutateConnections.suite,
+				   TestFlipInputs.suite ]
+		suites = [ TestFlipInputs.suite ]
 		allTests = unittest.TestSuite(suites)
 
 		unittest.TextTestRunner(verbosity=2).run(allTests)

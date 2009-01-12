@@ -45,24 +45,28 @@ class TestMutateNoise(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Noise parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertAlmostEqual(0.5, self.agentSpec.brain.getNode("noise").rate)
+		self.geno.rand.default.floatDefault = 0.1
+		
+		self.geno.getNode("noise").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("noise")
+		self.assertAlmostEqual(0.5, node.rate)
 
 	def testAllMutate(self):
 		''' All Noise parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.0
-		self.geno.rand.getContext("mutateFloat").floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertNotAlmostEqual(0.5, self.agentSpec.brain.getNode("noise").rate)
+		self.geno.rand.default.floatDefault = 0.0
+		self.geno.rand.getContext("mutateFloat").floatDefault = 0.1
+		
+		self.geno.getNode("noise").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("noise")
+		self.assertNotAlmostEqual(0.5, node.rate)
 
 	def testMutateRate(self):
 		''' Noise rate should mutate.

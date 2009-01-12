@@ -52,8 +52,11 @@ class Genotype(object):
 		self._rangeRate = 0.1
 		self._floatRate = 0.1
 		self._listRate = 0.1
-		self._switchRate = 0.1
-		self._nodes = []
+		self._switchInputRate = 0.1
+		self._reconnectRate = 0.1
+		self._flipInputRate = 0.1
+		self._nodesByName = {}
+		self._nodesById = []
 		self._outputChannels = []
 		self._inputChannels = []
 		
@@ -86,31 +89,50 @@ class Genotype(object):
 	def _getListMutationRate(self): return self._listRate
 	listMutationRate = property(_getListMutationRate, _setListMutationRate)
 
-	def _setSwitchMutationRate(self, val):
-		self._switchRate = val
-	def _getSwitchMutationRate(self): return self._switchRate
-	switchMutationRate = property(_getSwitchMutationRate, _setSwitchMutationRate)
+	def _setSwitchInputRate(self, val):
+		self._switchInputRate = val
+	def _getSwitchInputRate(self): return self._switchInputRate
+	switchInputRate = property(_getSwitchInputRate, _setSwitchInputRate)
+
+	def _setReconnectRate(self, val):
+		self._reconnectRate = val
+	def _getReconnectRate(self): return self._reconnectRate
+	reconnectRate = property(_getReconnectRate, _setReconnectRate)
+
+	def _setFlipInputRate(self, val):
+		self._flipInputRate = val
+	def _getFlipInputRate(self): return self._flipInputRate
+	flipInputRate = property(_getFlipInputRate, _setFlipInputRate)
 
 	
+	def _addNode(self, node):
+		self._nodesByName[node.node.name] = node
+		if node.node.id >= len(self._nodesById):
+			self._nodesById.extend([0] * (node.node.id - len(self._nodesById) + 1))
+		self._nodesById[node.node.id] = node
+		
 	def _initNodes(self):
 		'''	Build a Mutate node for each Brain node. '''
+		# initialize each node's output connection count, since we refer to it
+		# when determining whether a node should be deleted
+		self.agentSpec.brain.countOutputConnections()
 		for node in self.agentSpec.brain.nodes():
 			if isinstance(node, Brain.Output):
-				self._nodes.append(Mutate.Output(self, node))
+				self._addNode(Mutate.Output(self, node))
 			if isinstance(node, Brain.Defuzz):
-				self._nodes.append(Mutate.Defuzz(self, node))
+				self._addNode(Mutate.Defuzz(self, node))
 			if isinstance(node, Brain.Or):
-				self._nodes.append(Mutate.Or(self, node))
+				self._addNode(Mutate.Or(self, node))
 			if isinstance(node, Brain.Rule):
-				self._nodes.append(Mutate.Rule(self, node))
+				self._addNode(Mutate.Rule(self, node))
 			if isinstance(node, Brain.Fuzz):
-				self._nodes.append(Mutate.Fuzz(self, node))
+				self._addNode(Mutate.Fuzz(self, node))
 			if isinstance(node, Brain.Noise):
-				self._nodes.append(Mutate.Noise(self, node))
+				self._addNode(Mutate.Noise(self, node))
 			if isinstance(node, Brain.Timer):
-				self._nodes.append(Mutate.Timer(self, node))
+				self._addNode(Mutate.Timer(self, node))
 			if isinstance(node, Brain.Input):
-				self._nodes.append(Mutate.Input(self, node))
+				self._addNode(Mutate.Input(self, node))
 								
 	def _initOutputChannels(self):
 		'''	defaultChannels +
@@ -151,19 +173,23 @@ class Genotype(object):
 		
 		# action + action:rate + action:running
 		for action in self.agentSpec.actions.values():
-			self._outputChannels.append(action.name)
-			self._outputChannels.append("%s:rate" % action.name)
-			self._outputChannels.append("%s:running" % action.name)
+			self._inputChannels.append(action.name)
+			self._inputChannels.append("%s:rate" % action.name)
+			self._inputChannels.append("%s:running" % action.name)
 		
 	def mutate(self):
-		for node in self._nodes:
+		for node in self._nodesByName.values():
 			node.mutate()
 			
-	def getNode(self, name):
-		for n in self._nodes:
-			if n.node.name == name:
-				return n
+	def getNode(self, nameOrId):
+		if isinstance(nameOrId, str):
+			return self._nodesByName[nameOrId]
+		elif isinstance(nameOrId, int):
+			return self._nodesById[nameOrId]
 		raise Errors.Error("No node named %s" % name)
+
+	def getNodes(self):
+		return self._nodesByName.values()
 
 	def outputChannels(self):
 		'''	Return a list of all possible output channels. Includes actions,

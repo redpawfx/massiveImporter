@@ -45,26 +45,30 @@ class TestMutateAnd(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No And parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertAlmostEqual(1.0, self.agentSpec.brain.getNode("and").weight)
-		self.assertEqual("min", self.agentSpec.brain.getNode("and").type)
+		self.geno.rand.default.floatDefault = 0.1
+		
+		self.geno.getNode("and").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("and")
+		self.assertAlmostEqual(1.0, node.weight)
+		self.assertEqual("min", node.type)
 
 	def testAllMutate(self):
 		''' All And parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.0
-		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
+
+		self.geno.rand.default.floatDefault = 0.0
+		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
 		
-		self.assertNotAlmostEqual(1.0, self.agentSpec.brain.getNode("and").weight)
-		self.assertNotEqual("max", self.agentSpec.brain.getNode("and").type)
+		self.geno.getNode("and").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("and")
+		self.assertNotAlmostEqual(1.0, node.weight)
+		self.assertNotEqual("max", node.type)
 
 	def testMutateWeight(self):
 		''' And weight should mutate.

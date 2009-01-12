@@ -45,26 +45,30 @@ class TestMutateDefuzz(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Defuzz parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.1
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertEqual(False, self.agentSpec.brain.getNode("defuzz").isElse)
-		self.assertAlmostEqual(0.0, self.agentSpec.brain.getNode("defuzz").defuzz)
+		self.geno.rand.default.floatDefault = 0.1
+
+		self.geno.getNode("defuzz").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("defuzz")
+		self.assertEqual(False, node.isElse)
+		self.assertAlmostEqual(0.0, node.defuzz)
 
 	def testAllMutate(self):
 		''' All Defuzz parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.0
-		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
-		self.geno.mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
 		
-		self.assertNotEqual(False, self.agentSpec.brain.getNode("defuzz").isElse)
-		self.assertNotAlmostEqual(0.0, self.agentSpec.brain.getNode("defuzz").defuzz)
+		self.geno.rand.default.floatDefault = 0.0
+		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
+
+		self.geno.getNode("defuzz").mutateParameters()
+		
+		node = self.agentSpec.brain.getNode("defuzz")
+		self.assertNotEqual(False, node.isElse)
+		self.assertNotAlmostEqual(0.0, node.defuzz)
 
 	def testMutateDefuzz(self):
 		''' Defuzz defuzz should mutate.

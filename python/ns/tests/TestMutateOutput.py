@@ -45,11 +45,11 @@ class TestMutateOutput(unittest.TestCase):
 	
 	def testNoMutate(self):
 		''' No Output parameters should mutate.'''
-		self.geno.rand.default.floatDefault = 0.1
-		self.geno.getNode("unconnected").mutate()
-		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(5, len(nodes))
+		
+		self.geno.rand.default.floatDefault = 0.1
+		self.geno.getNode("unconnected").mutateParameters()
 		
 		self.assertEqual("channel", self.agentSpec.brain.getNode("unconnected").channel)
 		self.assertEqual("position", self.agentSpec.brain.getNode("unconnected").integrate)
@@ -65,7 +65,7 @@ class TestMutateOutput(unittest.TestCase):
 		self.geno.rand.default.floatDefault = 0.0
 		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.75]
 		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
-		self.geno.getNode("unconnected").mutate()
+		self.geno.getNode("unconnected").mutateParameters()
 		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(5, len(nodes))

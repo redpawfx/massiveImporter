@@ -46,7 +46,7 @@ class TestMutateInput(unittest.TestCase):
 	def testNoMutate(self):
 		''' No Input parameters should mutate.'''
 		self.geno.rand.default.floatDefault = 0.1
-		self.geno.getNode("input").mutate()
+		self.geno.getNode("input").mutateParameters()
 		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))
@@ -61,7 +61,7 @@ class TestMutateInput(unittest.TestCase):
 		self.geno.rand.default.floatDefault = 0.0
 		self.geno.rand.getContext("mutateFloat").floatValues = [0.5, 0.75]
 		self.geno.rand.getContext("mutateFloat").floatDefault = 0.5
-		self.geno.getNode("input").mutate()
+		self.geno.getNode("input").mutateParameters()
 		
 		nodes = self.agentSpec.brain.nodes()
 		self.assertEqual(1, len(nodes))

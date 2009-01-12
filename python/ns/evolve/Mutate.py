@@ -28,15 +28,56 @@ class Node(object):
 		self._geno = genotype
 		self.node = node
 		
+	def mutate(self):
+		self.mutateParameters()
+		self.mutateInputs()
+		
+	def mutateInputs(self):
+		''' 1. reconnect inputs to other nodes
+			2. flip regular inputs to alt-inputs, and vice versa
+		'''
+		self.mutateConnections()
+		self.flipInputs()
+			
+	def mutateConnections(self):
+		for i in range(len(self.node.inputs)):
+			if self.shouldMutate(self._geno.reconnectRate):
+				newSrc = self.reconnect(self.node.inputs[i])
+				self.node.inputs[i] = newSrc.id
+		for i in range(len(self.node.altInputs)):
+			if self.shouldMutate(self._geno.reconnectRate):
+				newSrc = self.reconnect(self.node.altInputs[i])
+				self.node.altInputs[i] = newSrc.id
+			
+	def reconnect(self, oldSrcId):
+		'''	Disconnect from oldSrc, and find a new source node to reconnect to.
+		'''
+		# notify the source node that it's losing an output connection
+		oldSrc = self._geno.getNode(oldSrcId).node
+		oldSrc.disconnect(self.node)
+		# find a random node, not ourself, to reconnect to
+		nodes = self._geno.getNodes()
+		while True:
+			index = self._geno.rand.randint(0, len(nodes)-1)
+			# notify the new source node that it's gaining an output
+			# connection
+			newSrc = nodes[index].node
+			if (newSrc != self.node and
+			 	newSrc != oldSrc and
+			 	newSrc.id not in self.node.inputs and
+			 	newSrc.id not in self.node.altInputs):
+				break
+		newSrc.connect(self.node)
+		return newSrc
+		
 	def shouldMutate(self, rate):
 		return self._geno.rand.random() < rate
-		
+	
 	def mutateString(self, curValue, validValues):
 		'''	Returns a random string value from validValues.'''
 		value = curValue
 		while (value == curValue):
-			index = self._geno.rand.randint(0, len(validValues) - 1)
-			value = validValues[index]
+			value = validValues[self._geno.rand.randint(0, len(validValues)-1)]
 		return value
 	
 	def mutateFloat(self, curValue):
@@ -68,11 +109,14 @@ class Node(object):
 			list.append(val)
 		return list
 				
+###############################################################################
+# Output
+###############################################################################
 class Output(Node):
 	def __init__(self, genotype, node):
 		super(Output, self).__init__(genotype, node)
-
-	def mutate(self):
+		
+	def mutateParameters(self):
 		self.mutateChannel()
 		self.mutateIntegrate()
 		self.mutateManual()
@@ -127,12 +171,20 @@ class Output(Node):
 		  	not self.node.altInputs and
 		  	self.shouldMutate(self._geno.floatMutationRate)):
 			self.node.output = self.mutateFloat(self.node.output)
+			
+	def flipInputs(self):
+		''' No alt-inputs allows, so no mutations will occur.
+		'''
+		pass
 
+###############################################################################
+# Defuzz
+###############################################################################
 class Defuzz(Node):
 	def __init__(self, genotype, node):
 		super(Defuzz, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateDefuzz()
 		self.mutateElse()
 		
@@ -145,12 +197,36 @@ class Defuzz(Node):
 		''' Else (bool)'''
 		if self.shouldMutate(self._geno.boolMutationRate):
 			self.node.isElse = not self.node.isElse
+			
+	def flipInputs(self):
+		''' No alt-inputs allowed if it is an else node, otherwise one
+			alt-input allowed. Possibility to flip a single alt-input into
+			regular input, and, if no alt-input is present, possibility to
+			flip a regular input into an alt-input.
+		'''
+		if not self.node.isElse:
+			# Occasionally flip an alt input into a regular input
+			# grab the current input length so we don't flip any
+			# inputs back and forth
+			numInputs = len(self.node.inputs)
+			if self.node.altInputs and self.shouldMutate(self._geno.flipInputRate):
+				self.node.inputs.append(self.node.altInputs.pop())
+			# If there aren't any alt inputs, occasionally flip a regular
+			# input into an alt input
+			if (not self.node.altInputs and
+			  	self.shouldMutate(self._geno.flipInputRate)):
+				index = self._geno.rand.randint(0, numInputs - 1)
+				value = self.node.inputs.pop(index)
+				self.node.altInputs.append(value)
 
+###############################################################################
+# Or
+###############################################################################
 class Or(Node):
 	def __init__(self, genotype, node):
 		super(Or, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateWeight()
 		self.mutateType()
 		
@@ -164,11 +240,31 @@ class Or(Node):
 		if self.shouldMutate(self._geno.stringMutationRate):
 			self.node.type = self.mutateString(self.node.type, Brain.Or.kTypeValues)
 
+	def flipInputs(self):
+		''' Infinite alt-input allowed. Each input can be flipped into an
+			alt-input, and each alt-input can be flipped into a regular input.
+		'''
+		# record the current number of inputs, since the inputs list may be
+		# extended by flipped alt-inputs and we don't want those new inputs
+		# to be flipped again
+		numInputs = len(self.node.inputs)
+		# iterate through the list from end to beginning so that our iteration
+		# isn't confused when we remove elements from the list
+		for i in range(len(self.node.altInputs), 0, -1):
+			if self.shouldMutate(self._geno.flipInputRate):
+				self.node.inputs.append(self.node.altInputs.pop(i-1))
+		for i in range(numInputs, 0, -1):
+			if self.shouldMutate(self._geno.flipInputRate):
+				self.node.altInputs.append(self.node.inputs.pop(i-1))
+
+###############################################################################
+# Rule
+###############################################################################
 class Rule(Node):
 	def __init__(self, genotype, node):
 		super(Rule, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateWeight()
 		self.mutateType()
 		
@@ -182,11 +278,32 @@ class Rule(Node):
 		if self.shouldMutate(self._geno.stringMutationRate):
 			self.node.type = self.mutateString(self.node.type, Brain.Rule.kTypeValues)
 
+
+	def flipInputs(self):
+		''' Infinite alt-input allowed. Each input can be flipped into an
+			alt-input, and each alt-input can be flipped into a regular input.
+		'''
+		# record the current number of inputs, since the inputs list may be
+		# extended by flipped alt-inputs and we don't want those new inputs
+		# to be flipped again
+		numInputs = len(self.node.inputs)
+		# iterate through the list from end to beginning so that our iteration
+		# isn't confused when we remove elements from the list
+		for i in range(len(self.node.altInputs), 0, -1):
+			if self.shouldMutate(self._geno.flipInputRate):
+				self.node.inputs.append(self.node.altInputs.pop(i-1))
+		for i in range(numInputs, 0, -1):
+			if self.shouldMutate(self._geno.flipInputRate):
+				self.node.altInputs.append(self.node.inputs.pop(i-1))
+
+###############################################################################
+# Fuzz
+###############################################################################
 class Fuzz(Node):
 	def __init__(self, genotype, node):
 		super(Fuzz, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateCurve()
 		self.mutateInterpolation()
 		self.mutateWrap()
@@ -212,11 +329,19 @@ class Fuzz(Node):
 		if self.shouldMutate(self._geno.boolMutationRate):
 			self.node.wrap = not self.node.wrap
 
+	def flipInputs(self):
+		''' No alt-inputs allows, so no mutations will occur.
+		'''
+		pass
+
+###############################################################################
+# Noise
+###############################################################################
 class Noise(Node):
 	def __init__(self, genotype, node):
 		super(Noise, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateRate()
 		
 	def mutateRate(self):
@@ -224,11 +349,19 @@ class Noise(Node):
 		if self.shouldMutate(self._geno.floatMutationRate):
 			self.node.rate = self.mutateFloat(self.node.rate)
 
+	def flipInputs(self):
+		''' No alt-inputs allows, so no mutations will occur.
+		'''
+		pass
+	
+###############################################################################
+# Timer
+###############################################################################
 class Timer(Node):
 	def __init__(self, genotype, node):
 		super(Timer, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateRate()
 		self.mutateTrigger()
 		self.mutateRange()
@@ -254,11 +387,28 @@ class Timer(Node):
 		if self.shouldMutate(self._geno.boolMutationRate):
 			self.node.endless = not self.node.endless
 
+	def flipInputs(self):
+		''' One alt and one regular input allowed.
+		'''
+		if (self.node.inputs or self.node.altInputs):
+			if self.shouldMutate(self._geno.flipInputRate):
+				if self.node.inputs and self.node.altInputs:
+					temp = self.node.inputs.pop()
+					self.node.inputs.append(self.node.altInputs.pop())
+					self.node.altInputs.append(temp)
+				elif not self.node.altInputs:
+					self.node.altInputs.append(self.node.inputs.pop())
+				else:
+					self.node.inputs.append(self.node.altInputs.pop())
+
+###############################################################################
+# Input
+###############################################################################
 class Input(Node):
 	def __init__(self, genotype, node):
 		super(Input, self).__init__(genotype, node)
 
-	def mutate(self):
+	def mutateParameters(self):
 		self.mutateValue()
 		self.mutateIntegrate()
 		self.mutateRange()
@@ -269,13 +419,13 @@ class Input(Node):
 			output for some percentage of the time. And vice versa.'''
 		if self.node.channel:
 			if self.shouldMutate(self._geno.stringMutationRate):
-				if self.shouldMutate(self._geno.switchMutationRate):
+				if self.shouldMutate(self._geno.switchInputRate):
 					self.node.channel = ""
 					self.node.output = self.mutateFloat(self.node.output)
 				else:
 					self.node.channel = self.mutateString(self.node.channel, self._geno.inputChannels())
 		elif self.shouldMutate(self._geno.floatMutationRate):
-			if self.shouldMutate(self._geno.switchMutationRate):
+			if self.shouldMutate(self._geno.switchInputRate):
 				self.node.channel = self.mutateString(self.node.channel, self._geno.inputChannels())
 			else:
 				self.node.output = self.mutateFloat(self.node.output)
@@ -290,3 +440,7 @@ class Input(Node):
 		if self.shouldMutate(self._geno.rangeMutationRate):
 			self.node.range = self.mutateFloatRange(self.node.range)
 
+	def flipInputs(self):
+		''' No alt-inputs allows, so no mutations will occur.
+		'''
+		pass
