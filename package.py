@@ -3,7 +3,7 @@ import os.path
 import shutil
 import py_compile
 
-_srcRoot = "C:/svn/msvimporter"
+_srcRoot = "C:/sandbox/msvimporter"
 _pySrcRoot = "%s/python" % _srcRoot
 _dstRoot = "C:/sandbox/msv"
 
@@ -11,6 +11,7 @@ _pyDstRoot = "%s/python" % _dstRoot
 _pluginsDstRoot = "%s/plug-ins" % _dstRoot
 _scriptsDstRoot = "%s/scripts" % _dstRoot
 _iconsDstRoot = "%s/icons" % _dstRoot
+_testsDstRoot = "%s/tests" % _dstRoot
 
 _pluginFiles = [ "plug-ins/MsvTools.py" ]
 
@@ -34,6 +35,7 @@ _pyFiles = [
 		"ns/bridge/io/MasReader.py",
 		"ns/bridge/io/MasWriter.py",
 		"ns/maya/msv/MayaAgent.py",
+		"ns/maya/msv/MayaFactory.py",
 		"ns/maya/msv/MayaSkin.py",
 		"ns/maya/msv/MayaSceneAgent.py",
 		"ns/maya/msv/MayaSimAgent.py",
